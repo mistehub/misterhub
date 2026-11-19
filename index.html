@@ -1,0 +1,510 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#12301f">
+<title>MisterHub · Leghe manageriali online</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800;900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--bg:#0b1712;--card:#12241a;--card2:#16301f;--line:#1f3a2c;--line2:#2f5a43;--acc:#9fd3b0;--txt:#eaf4ee;--sub:#b9d3c4;--mut:#8fb3a0;--red:#e5383b;--head:#12301f}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--txt);font-family:Inter,system-ui,sans-serif;-webkit-text-size-adjust:100%}
+a{color:var(--acc)}
+button,input,select,textarea{font:inherit}
+.disp{font-family:'Barlow Condensed',sans-serif;font-weight:900;letter-spacing:.5px;text-transform:uppercase}
+.wrap{max-width:760px;margin:0 auto;padding:16px 16px 120px}
+header{background:var(--head);border-bottom:3px solid var(--acc);position:sticky;top:0;z-index:20}
+.hrow{max-width:760px;margin:0 auto;padding:12px 16px 8px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.logo{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--txt)}
+.logo b{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:26px;letter-spacing:1px;line-height:1}
+.logo small{display:block;font-size:10px;letter-spacing:2px;color:var(--acc);font-weight:700}
+.chip{font-size:12px;font-weight:800;color:var(--bg);background:var(--acc);border-radius:999px;padding:8px 12px;text-decoration:none;white-space:nowrap;max-width:45vw;overflow:hidden;text-overflow:ellipsis}
+nav.menu{max-width:760px;margin:0 auto;padding:0 12px 12px;display:flex;gap:6px;flex-wrap:wrap}
+nav.menu details{position:relative}
+nav.menu summary,nav.menu>a{list-style:none;cursor:pointer;display:inline-block;padding:9px 12px;border-radius:10px;background:var(--bg);color:var(--txt);font-size:14px;font-weight:700;text-decoration:none;user-select:none}
+nav.menu summary::-webkit-details-marker{display:none}
+nav.menu details[open] summary,nav.menu .on{background:var(--acc);color:var(--bg)}
+.dd{position:absolute;left:0;top:calc(100% + 6px);min-width:220px;background:var(--card);border:1px solid var(--line2);border-radius:12px;padding:6px;display:flex;flex-direction:column;box-shadow:0 16px 40px rgba(0,0,0,.5);z-index:30}
+.dd a{padding:11px 12px;border-radius:8px;color:var(--txt);text-decoration:none;font-weight:600;font-size:15px}
+.dd a:hover{background:var(--card2)}
+h1{margin:6px 0 12px;font-size:40px;line-height:.95}
+h2{margin:22px 0 10px;font-size:28px}
+.sub{color:var(--sub);font-size:14px;line-height:1.5}
+.mut{color:var(--mut);font-size:13px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px}
+.stack{display:flex;flex-direction:column;gap:12px}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.hcard{display:flex;align-items:center;gap:14px;text-decoration:none;color:var(--txt);background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px}
+.hcard.hi{background:var(--acc);border-color:var(--acc);color:var(--bg)}
+.hcard .ic{flex:none;width:52px;height:52px;border-radius:14px;background:var(--card2);display:flex;align-items:center;justify-content:center}
+.hcard.hi .ic{background:var(--bg)}
+.hcard b{display:block;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:24px;line-height:1;text-transform:uppercase}
+.hcard span.d{display:block;font-size:13px;line-height:1.4;color:var(--sub);margin-top:4px}
+.hcard.hi span.d{color:#16301f}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:0;border-radius:12px;padding:13px 16px;font-weight:800;font-size:15px;cursor:pointer;text-decoration:none;background:var(--acc);color:var(--bg);min-height:44px}
+.btn.ghost{background:var(--bg);color:var(--txt);border:1px solid var(--line2)}
+.btn.out{background:transparent;color:var(--acc);border:1px solid var(--acc)}
+.btn.bad{background:#3a1416;color:#ffb3b5;border:1px solid #6b2427}
+.btn.sm{padding:9px 12px;font-size:13px;min-height:38px;border-radius:10px}
+.btn.full{width:100%}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.pill{display:inline-block;font-size:11px;font-weight:800;padding:5px 9px;border-radius:999px;letter-spacing:.3px}
+.p-open{background:var(--acc);color:var(--bg)}.p-live{background:var(--red);color:#fff}.p-end{background:#2a3a33;color:var(--sub)}.p-wait{background:#4a3a12;color:#ffd98a}
+.tag{font-size:12px;font-weight:600;padding:4px 9px;border-radius:999px;background:var(--bg);color:var(--acc)}
+.tcard{background:var(--card);border:1px solid var(--line);border-radius:18px;overflow:hidden}
+.tcard .th{background:var(--card2);padding:14px 16px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.tcard .th b{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:26px;line-height:1;text-transform:uppercase}
+.tcard .tb{padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.tbtns{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.tbtns .btn{font-size:13px;padding:10px 4px;min-height:40px}
+.tbtns .main{grid-column:1/-1;font-size:15px}
+.filters{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:12px}
+.filters button{flex:none;border-radius:999px;padding:9px 14px;font-size:13px;font-weight:700;border:1px solid var(--line2);background:var(--bg);color:var(--txt);cursor:pointer}
+.filters button.on{background:var(--acc);color:var(--bg);border-color:var(--acc)}
+label.f{display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--sub)}
+input,select,textarea{font-size:16px;color:var(--txt);background:var(--card);border:1px solid var(--line2);border-radius:10px;padding:12px;width:100%}
+textarea{min-height:90px;resize:vertical}
+.choice{display:flex;gap:12px;padding:14px;border-radius:14px;background:var(--card);border:1px solid var(--line2);cursor:pointer}
+.choice:has(input:checked){background:var(--card2);border:2px solid var(--acc)}
+.choice input{width:20px;height:20px;flex:none;margin-top:2px}
+.tog{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 14px;border-radius:12px;background:var(--card);cursor:pointer}
+.tog input{width:22px;height:22px;flex:none}
+.plan{border-radius:18px;padding:18px;display:flex;flex-direction:column;gap:10px;background:var(--card);border:1px solid var(--line)}
+.plan.hi{background:var(--acc);color:var(--bg);border-color:var(--acc)}
+.plan ul{margin:0;padding-left:18px;font-size:14px;line-height:1.75}
+.plan .price{font-size:34px;font-weight:800}
+.notice{background:var(--card2);border:1px solid var(--line2);border-radius:14px;padding:12px 14px;font-size:14px;line-height:1.5}
+.list{display:flex;flex-direction:column;gap:6px}
+.li{display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--bg);border-radius:12px;padding:12px}
+.li .n{min-width:0;overflow:hidden;text-overflow:ellipsis}
+footer.spons{position:fixed;left:0;right:0;bottom:0;background:var(--head);border-top:1px solid var(--line);padding:10px 12px calc(10px + env(safe-area-inset-bottom));display:flex;align-items:center;gap:10px;z-index:20}
+.marq{flex:1;min-width:0;overflow:hidden;mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent)}
+.marq .tr{display:flex;gap:8px;width:max-content;animation:mq 30s linear infinite}
+.marq:hover .tr{animation-play-state:paused}
+@keyframes mq{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+@media (prefers-reduced-motion:reduce){.marq .tr{animation:none}}
+.sp{flex:none;font-size:12px;font-weight:700;padding:8px 12px;border-radius:8px;background:var(--bg);border:1px solid var(--line2);color:var(--txt);text-decoration:none;white-space:nowrap}
+.sp small{color:var(--acc);font-weight:600;margin-left:6px}
+dialog{border:1px solid var(--line2);border-radius:18px;background:var(--card);color:var(--txt);padding:0;width:min(560px,94vw);max-height:88vh}
+dialog::backdrop{background:rgba(0,0,0,.6)}
+dialog form{display:flex;flex-direction:column;gap:12px;padding:18px;max-height:88vh;overflow:auto}
+dialog h3{margin:0;font-size:26px}
+.err{color:#ffb3b5;font-size:14px}
+.toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:var(--acc);color:var(--bg);font-weight:800;padding:12px 18px;border-radius:12px;z-index:60;max-width:90vw;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,.4)}
+.tabs{display:flex;gap:6px;overflow-x:auto;margin-bottom:12px}
+.tabs a{flex:none;padding:9px 12px;border-radius:10px;background:var(--card);color:var(--txt);text-decoration:none;font-weight:700;font-size:14px;border:1px solid var(--line)}
+.tabs a.on{background:var(--acc);color:var(--bg);border-color:var(--acc)}
+.auth{min-height:100vh;display:flex;flex-direction:column;background:var(--head)}
+.auth .in{flex:1;display:flex;flex-direction:column;justify-content:center;gap:20px;padding:28px 22px 110px;max-width:460px;width:100%;margin:0 auto}
+.seg{display:grid;grid-template-columns:1fr 1fr;background:var(--bg);border-radius:12px;padding:4px}
+.seg button{border:0;border-radius:9px;padding:10px;font-weight:800;background:transparent;color:var(--sub);cursor:pointer}
+.seg button.on{background:var(--acc);color:var(--bg)}
+.empty{text-align:center;color:var(--mut);padding:24px 12px}
+</style>
+</head>
+<body>
+<div id="app"><div class="empty" style="padding-top:40vh">Caricamento…</div></div>
+<dialog id="dlg"></dialog>
+<script>
+const SB_URL = 'https://fgjekmjlmzwdcphqpeul.supabase.co';
+const SB_KEY = 'sb_publishable_U7-K-4NqzVgOEJyD4EsaRQ_FOGY8QI2';
+const sb = window.supabase.createClient(SB_URL, SB_KEY);
+const S = {user: null, me: null, comps: [], regs: [], names: {}, sponsors: [], reqs: [], subs: [], admins: [], profiles: [], filter: 'tutti', atab: 'richieste', authMode: 'login', ready: false};
+const $ = s => document.querySelector(s);
+const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
+const fail = m => { throw new Error(m); };
+const day = d => d ? new Date(d).toLocaleDateString('it-IT', {day: '2-digit', month: '2-digit', year: 'numeric'}) : '';
+const waLink = n => { const d = String(n || '').replace(/\D/g, ''); return d ? 'https://wa.me/' + (d.length <= 10 ? '39' + d : d) : ''; };
+const safeUrl = u => /^https?:\/\//i.test(u || '') ? u : '';
+function toast(m){ const t = document.createElement('div'); t.className = 'toast'; t.textContent = m; document.body.appendChild(t); setTimeout(() => t.remove(), 2800); }
+function errIt(e){
+  const m = (e && (e.message || e.error_description)) || String(e);
+  if (/Invalid login credentials/i.test(m)) return 'Email o password sbagliate.';
+  if (/already registered/i.test(m)) return 'Esiste già un account con questa email: accedi.';
+  if (/Password should be at least/i.test(m)) return 'La password deve avere almeno 6 caratteri.';
+  if (/row-level security|permission denied/i.test(m)) return 'Operazione non permessa con il tuo account.';
+  if (/duplicate key/i.test(m)) return 'Sei già iscritto a questa competizione.';
+  if (/Failed to fetch|NetworkError/i.test(m)) return 'Connessione assente: riprova.';
+  return m;
+}
+const PLANS = {
+  starter: {n: 'Starter', p: '€ 49', items: ['1 competizione attiva', 'Fino a 16 squadre', 'Modello League Manager pronto', 'Assistenza via WhatsApp ed email, risposta entro 48 ore']},
+  pro: {n: 'Pro', p: '€ 99', hi: true, items: ['Fino a 3 competizioni attive', 'Fino a 24 squadre, più divisioni', 'Moduli e regole personalizzabili', 'Attivazione guidata della lega', 'Assistenza prioritaria, risposta entro 24 ore']},
+  elite: {n: 'Élite', p: '€ 199', items: ['Competizioni illimitate', 'Dominio personalizzato incluso (es. latualega.it), registrato e gestito da MisterHub', 'Logo, colori e grafiche della tua lega', 'Una modifica su misura al mese', 'Assistenza dedicata, anche durante le serate di gioco']}
+};
+const MODULES = ['Sorteggio panchine', 'Mercato e aste', 'Distinte e tattiche', 'Precampionato', 'Sponsor, stadio, staff medico', 'Coppa', 'Cartellini e squalifiche'];
+const ST = {iscrizioni: ['ISCRIZIONI APERTE', 'p-open'], in_corso: ['IN CORSO', 'p-live'], conclusa: ['CONCLUSA', 'p-end']};
+const REQ_ST = {nuova: 'Nuova', in_contatto: 'In contatto', attiva: 'Attivata', rifiutata: 'Rifiutata'};
+const ICON = p => `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#9fd3b0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
+const IC = {
+  trophy: ICON('<path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/>'),
+  plus: ICON('<circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/>'),
+  book: ICON('<path d="M4 4h7a3 3 0 0 1 3 3v13a2 2 0 0 0-2-2H4z"/><path d="M20 4h-4a2 2 0 0 0-2 2v14a2 2 0 0 1 2-2h4z"/>'),
+  chat: ICON('<path d="M21 12a8 8 0 0 1-12 7l-5 1 1-4a8 8 0 1 1 16-4z"/>'),
+  star: ICON('<path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/>'),
+  user: ICON('<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>')
+};
+const LOGO = (s = 40) => `<svg width="${s}" height="${s * 1.1}" viewBox="0 0 40 44" role="img" aria-label="MisterHub"><path d="M20 1 L38 11 V33 L20 43 L2 33 V11 Z" fill="#0b1712" stroke="#9fd3b0" stroke-width="2.5"/><path d="M12 30 V15 L20 24 L28 15 V30" fill="none" stroke="#9fd3b0" stroke-width="3" stroke-linejoin="round"/></svg>`;
+
+/* ---------- dati ---------- */
+async function q(p){ const r = await p; if (r.error) throw r.error; return r.data; }
+async function loadAll(){
+  const [comps, regs, sponsors, admins] = await Promise.all([
+    q(sb.from('competitions').select('*').order('sort').order('created_at')),
+    q(sb.from('registrations').select('*').order('created_at')),
+    q(sb.from('sponsors').select('*').eq('active', true).order('sort')),
+    q(sb.from('profiles').select('id,nickname,whatsapp').eq('is_admin', true))
+  ]);
+  S.comps = comps; S.regs = regs; S.sponsors = sponsors; S.admins = admins;
+  if (S.user){
+    const ids = [...new Set(regs.map(r => r.user_id))];
+    const profs = ids.length ? await q(sb.from('profiles').select('id,nickname').in('id', ids)) : [];
+    S.names = Object.fromEntries(profs.map(p => [p.id, p.nickname]));
+    S.me = (await q(sb.from('profiles').select('*').eq('id', S.user.id))) [0] || null;
+    S.reqs = await q(sb.from('requests').select('*').order('created_at', {ascending: false}));
+    S.subs = await q(sb.from('subscriptions').select('*').order('ends_on', {ascending: false}));
+    S.profiles = S.me?.is_admin ? await q(sb.from('profiles').select('id,nickname,created_at').order('created_at')) : [];
+  }
+  S.ready = true;
+}
+async function refresh(){ S.allSponsors = null; try { await loadAll(); } catch (e){ toast(errIt(e)); } render(); }
+
+/* ---------- utilità competizioni ---------- */
+const regsOf = id => S.regs.filter(r => r.competition_id === id);
+const inOf = id => regsOf(id).filter(r => r.status === 'iscritto');
+const waitOf = id => regsOf(id).filter(r => r.status === 'attesa');
+const myReg = id => S.user && S.regs.find(r => r.competition_id === id && r.user_id === S.user.id);
+const comp = id => S.comps.find(c => c.id === +id);
+const isAdmin = () => !!S.me?.is_admin;
+const nick = id => S.names[id] || S.profiles.find(p => p.id === id)?.nickname || 'Manager';
+
+/* ---------- layout ---------- */
+function headerHTML(route){
+  const on = r => route === r ? ' class="on"' : '';
+  return `<header><div class="hrow"><a class="logo" href="#home">${LOGO(36)}<span><b>MISTERHUB</b><small>LEGHE MANAGERIALI</small></span></a>
+    <a class="chip" href="#profilo">${esc(S.me?.nickname || 'Profilo')}</a></div>
+    <nav class="menu" aria-label="Menu principale">
+      <a href="#home"${on('home')}>Home</a>
+      <details><summary>Tornei ▾</summary><div class="dd"><a href="#tornei/tutti">Tutti i tornei</a><a href="#tornei/iscrizioni">Iscrizioni aperte</a><a href="#tornei/in_corso">In corso (lista d'attesa)</a><a href="#tornei/conclusa">Conclusi</a></div></details>
+      <details><summary>Organizza ▾</summary><div class="dd"><a href="#crea">Crea la tua competizione</a><a href="#abbonamenti">Abbonamenti annuali</a></div></details>
+      <details><summary>Assistenza ▾</summary><div class="dd"><a href="#assistenza">Contatta MisterHub</a><a href="#tornei/tutti">Regolamenti dei tornei</a><a href="#profilo">Il mio profilo</a></div></details>
+    </nav></header>`;
+}
+function sponsorsHTML(){
+  const sp = S.sponsors.length ? S.sponsors : [{name: 'Diventa sponsor di MisterHub', contact: 'scrivici'}];
+  const one = sp.map(s => { const u = safeUrl(s.link); const inner = `${esc(s.name)}${s.contact ? `<small>${esc(s.contact)}</small>` : ''}`;
+    return u ? `<a class="sp" href="${esc(u)}" target="_blank" rel="noopener">${inner}</a>` : `<span class="sp">${inner}</span>`; }).join('');
+  return `<footer class="spons"><span class="mut" style="font-weight:800;letter-spacing:1px;font-size:11px;color:var(--acc)">SPONSOR</span>
+    <div class="marq"><div class="tr">${one}${one}</div></div>
+    ${isAdmin() ? '<a class="btn sm" href="#admin">Admin</a>' : ''}</footer>`;
+}
+
+/* ---------- pagine ---------- */
+function viewAuth(){
+  const reg = S.authMode === 'register';
+  return `<div class="auth"><div class="in">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center">${LOGO(92)}
+      <div class="disp" style="font-size:48px;line-height:.9">MISTERHUB</div>
+      <div class="sub">Leghe manageriali online · FC 27 · eFootball<br>PlayStation, Xbox e PC</div></div>
+    <form id="authform" class="card stack" style="background:var(--bg)">
+      <div class="seg" role="tablist"><button type="button" data-act="auth-mode" data-id="login" class="${reg ? '' : 'on'}">Accedi</button><button type="button" data-act="auth-mode" data-id="register" class="${reg ? 'on' : ''}">Registrati</button></div>
+      ${reg ? '<label class="f">Nickname (come ti vedono gli altri)<input name="nick" required maxlength="24" autocomplete="nickname"></label>' : ''}
+      <label class="f">Email<input name="email" type="email" required autocomplete="email"></label>
+      <label class="f">Password<input name="pass" type="password" required minlength="6" autocomplete="${reg ? 'new-password' : 'current-password'}"></label>
+      <p class="err" id="autherr" hidden></p>
+      <button class="btn full" type="submit">${reg ? 'Crea account' : 'Entra'}</button>
+      ${reg ? '' : '<button class="btn ghost sm" type="button" data-act="reset-pass">Password dimenticata?</button>'}
+    </form>
+    <p class="mut" style="text-align:center">Vuoi organizzare la tua lega? Registrati e scegli "Crea la tua competizione".</p>
+  </div>${sponsorsHTML()}</div>`;
+}
+function viewHome(){
+  const card = (href, ic, t, d, hi) => `<a class="hcard${hi ? ' hi' : ''}" href="${href}"><span class="ic">${ic}</span><span><b>${t}</b><span class="d">${d}</span></span></a>`;
+  const mine = S.regs.filter(r => r.user_id === S.user.id).map(r => ({r, c: comp(r.competition_id)})).filter(x => x.c);
+  return `<span class="mut" style="font-weight:800;letter-spacing:1px;color:var(--acc)">CIAO, ${esc((S.me?.nickname || '').toUpperCase())}</span>
+  <h1 class="disp">Dove vuoi andare?</h1>
+  <div class="stack">
+    ${card('#tornei/tutti', IC.trophy, 'Tornei e leghe', 'Iscriviti o mettiti in lista d’attesa per un torneo già iniziato')}
+    ${card('#crea', IC.plus, 'Crea la tua competizione', 'Il tuo manageriale come League Manager, o con le tue regole', true)}
+    ${card('#tornei/tutti', IC.book, 'Regolamenti', 'Le regole di ogni torneo, sempre consultabili')}
+    ${card('#abbonamenti', IC.star, 'Abbonamenti', 'Piani annuali per organizzatori, con assistenza tutto l’anno')}
+    ${card('#assistenza', IC.chat, 'Assistenza e contatti', 'Scrivici su WhatsApp per qualsiasi informazione')}
+    ${card('#profilo', IC.user, 'Il mio profilo', 'Iscrizioni, richieste e abbonamento')}
+  </div>
+  ${mine.length ? `<h2 class="disp">Le tue competizioni</h2><div class="list">${mine.map(({r, c}) => `<div class="li"><span class="n"><b>${esc(c.name)}</b><br><span class="mut">${r.status === 'attesa' ? `In lista d’attesa · posizione ${waitOf(c.id).findIndex(x => x.user_id === r.user_id) + 1}` : 'Iscritto'}</span></span>${safeUrl(c.site_url) ? `<a class="btn sm" href="${esc(c.site_url)}" target="_blank" rel="noopener">Apri</a>` : `<a class="btn sm ghost" href="#tornei/tutti">Dettagli</a>`}</div>`).join('')}</div>` : ''}`;
+}
+function viewTornei(f){
+  S.filter = ['tutti', 'iscrizioni', 'in_corso', 'conclusa'].includes(f) ? f : 'tutti';
+  const list = S.comps.filter(c => S.filter === 'tutti' || c.status === S.filter);
+  const fb = (k, l) => `<button type="button" data-act="filter" data-id="${k}" class="${S.filter === k ? 'on' : ''}">${l}</button>`;
+  return `<h1 class="disp">Tornei e leghe</h1>
+  <div class="filters">${fb('tutti', 'Tutti')}${fb('iscrizioni', 'Iscrizioni aperte')}${fb('in_corso', 'In corso')}${fb('conclusa', 'Conclusi')}</div>
+  <div class="stack">${list.map(tcard).join('') || '<div class="empty card">Nessun torneo in questa sezione.</div>'}
+  <div class="notice"><b>Lista d’attesa:</b> se un torneo è già iniziato o al completo, puoi metterti in lista. Quando si libera un posto, l’organizzatore chiama in ordine di iscrizione alla lista.</div></div>`;
+}
+function tcard(c){
+  const [stl, stc] = ST[c.status] || ST.iscrizioni, mr = myReg(c.id), n = inOf(c.id).length, w = waitOf(c.id).length;
+  const full = n >= c.max_teams;
+  let main;
+  if (c.status === 'conclusa') main = '<button class="btn main ghost" disabled>Competizione conclusa</button>';
+  else if (mr) main = `<button class="btn main bad" data-act="leave" data-id="${c.id}">${mr.status === 'attesa' ? `Esci dalla lista d’attesa (sei ${waitOf(c.id).findIndex(x => x.user_id === mr.user_id) + 1}°)` : 'Ritira iscrizione'}</button>`;
+  else if (c.status === 'iscrizioni' && !full) main = `<button class="btn main" data-act="join" data-id="${c.id}">Iscriviti</button>`;
+  else main = `<button class="btn main out" data-act="join" data-id="${c.id}">Mettiti in lista d’attesa</button>`;
+  const wa = waLink(c.whatsapp), site = safeUrl(c.site_url);
+  return `<article class="tcard"><div class="th"><b>${esc(c.name)}</b><span class="pill ${stc}">${stl}</span></div>
+    <div class="tb"><div class="row"><span class="tag">${esc(c.game)}</span><span class="tag">${esc(c.mode)}</span><span class="tag">${esc(c.platforms)}</span></div>
+      <span class="sub">${n} su ${c.max_teams} iscritti${w ? ` · ${w} in lista d’attesa` : ''}${c.organizer ? ` · organizza ${esc(c.organizer)}` : ''}</span>
+      ${mr ? `<span class="pill ${mr.status === 'attesa' ? 'p-wait' : 'p-open'}" style="align-self:flex-start">${mr.status === 'attesa' ? 'SEI IN LISTA D’ATTESA' : 'SEI ISCRITTO'}</span>` : ''}
+      <div class="tbtns">${main}
+        <button class="btn ghost" data-act="rules" data-id="${c.id}">Regolamento</button>
+        <button class="btn ghost" data-act="people" data-id="${c.id}">Iscritti</button>
+        ${wa ? `<a class="btn ghost" href="${wa}" target="_blank" rel="noopener">WhatsApp</a>` : site ? `<a class="btn ghost" href="${esc(site)}" target="_blank" rel="noopener">Sito</a>` : '<button class="btn ghost" disabled>Contatti</button>'}
+      </div>
+      ${site && wa ? `<a class="btn ghost sm" href="${esc(site)}" target="_blank" rel="noopener">Apri il sito della lega</a>` : ''}
+    </div></article>`;
+}
+function viewCrea(plan){
+  const p = PLANS[plan] ? plan : 'pro';
+  const mine = S.reqs.filter(r => r.user_id === S.user.id);
+  return `<h1 class="disp">Crea la tua competizione</h1>
+  <p class="sub">Parti da un modello pronto o costruisci il tuo manageriale. Invia la richiesta: ti contattiamo su WhatsApp per i dettagli, il pagamento e l’attivazione.</p>
+  ${mine.length ? `<div class="notice" style="margin-bottom:12px">Hai già ${mine.length === 1 ? 'una richiesta' : mine.length + ' richieste'}: stato <b>${esc(REQ_ST[mine[0].status])}</b>. Le trovi nel tuo <a href="#profilo">profilo</a>.</div>` : ''}
+  <form id="creaform" class="stack">
+    <label class="choice"><input type="radio" name="base" value="modello" checked><span><b class="disp" style="font-size:22px">Modello League Manager</b><br><span class="sub">Serie A + B, sorteggio panchine, mercato con aste, precampionato, distinte FC 27. Pronto da usare.</span></span></label>
+    <label class="choice"><input type="radio" name="base" value="personalizzato"><span><b class="disp" style="font-size:22px">Personalizzato</b><br><span class="sub">Scegli tu moduli, struttura e regole.</span></span></label>
+    <h2 class="disp">La competizione</h2>
+    <label class="f">Nome della competizione<input name="name" required maxlength="60"></label>
+    <div class="grid2"><label class="f">Gioco<select name="game"><option>FC 27</option><option>eFootball</option></select></label>
+      <label class="f">Squadre<input name="teams" type="number" min="2" max="200" value="16" required></label></div>
+    <label class="f">Chi gioca le partite<select name="mode"><option>CPU contro CPU</option><option>I manager tra loro (PS, Xbox, PC)</option><option>Mista</option></select></label>
+    <h2 class="disp">Moduli</h2>
+    <div class="stack" style="gap:8px">${MODULES.map((m, i) => `<label class="tog"><span><b>${m}</b></span><input type="checkbox" name="mod" value="${esc(m)}"${i < 5 ? ' checked' : ''}></label>`).join('')}</div>
+    <label class="f">Regole speciali o richieste<textarea name="notes" maxlength="2000" placeholder="Descrivi cosa vuoi diverso dal modello"></textarea></label>
+    <h2 class="disp">Abbonamento e contatto</h2>
+    <label class="f">Abbonamento annuale<select name="plan">${Object.entries(PLANS).map(([k, v]) => `<option value="${k}"${k === p ? ' selected' : ''}>${v.n} · ${v.p} all’anno</option>`).join('')}</select></label>
+    <label class="f">Il tuo numero WhatsApp<input name="wa" type="tel" required inputmode="tel" placeholder="es. 333 1234567"></label>
+    <p class="err" id="creaerr" hidden></p>
+    <button class="btn full" type="submit">Invia la richiesta</button>
+  </form>`;
+}
+function viewAbbonamenti(){
+  const active = S.subs.find(s => s.user_id === S.user.id && new Date(s.ends_on) >= new Date(new Date().toDateString()));
+  return `<h1 class="disp">Abbonamenti annuali</h1>
+  <p class="sub">Per chi organizza. I manager che giocano entrano sempre gratis. Ogni piano dura 12 mesi e include l’assistenza per tutto l’anno.</p>
+  ${active ? `<div class="notice" style="margin:12px 0">Il tuo abbonamento <b>${esc(PLANS[active.plan]?.n)}</b> è attivo fino al <b>${day(active.ends_on)}</b>.</div>` : ''}
+  <div class="stack" style="margin-top:12px">${Object.entries(PLANS).map(([k, v]) => `<article class="plan${v.hi ? ' hi' : ''}">
+    <div class="row" style="justify-content:space-between"><b class="disp" style="font-size:30px">${v.n}</b>${v.hi ? '<span class="pill" style="background:var(--bg);color:var(--acc)">CONSIGLIATO</span>' : ''}</div>
+    <div><span class="price">${v.p}</span><span style="opacity:.8"> / anno</span></div>
+    <ul>${v.items.map(i => `<li>${i}</li>`).join('')}</ul>
+    <a class="btn ${v.hi ? '' : ''}" href="#crea/${k}" style="${v.hi ? 'background:var(--bg);color:var(--acc)' : ''}">Scegli ${v.n}</a></article>`).join('')}
+    <div class="card"><b class="disp" style="font-size:22px">Cosa comprende l’assistenza</b><ul class="sub" style="margin:8px 0 0;padding-left:18px"><li>Aiuto a configurare regole, rose e calendario</li><li>Correzione di errori nei dati della lega</li><li>Aggiornamenti del sito inclusi per tutto l’anno</li></ul></div>
+    <p class="mut">Il pagamento si concorda dopo la richiesta. L’abbonamento parte dal giorno di attivazione.</p></div>`;
+}
+function viewAssistenza(){
+  const a = S.admins.find(x => waLink(x.whatsapp));
+  return `<h1 class="disp">Assistenza</h1>
+  <div class="stack">
+    <div class="card stack"><b class="disp" style="font-size:24px">Scrivici</b><span class="sub">Per informazioni sui tornei, sugli abbonamenti o per un problema con il sito.</span>
+      ${a ? `<a class="btn full" href="${waLink(a.whatsapp)}" target="_blank" rel="noopener">Scrivi su WhatsApp a ${esc(a.nickname)}</a>` : '<span class="mut">Il contatto WhatsApp dell’assistenza sarà disponibile a breve.</span>'}</div>
+    <div class="card stack"><b class="disp" style="font-size:24px">Domande frequenti</b>
+      <div><b>Quanto costa partecipare a un torneo?</b><div class="sub">Per i manager l’iscrizione su MisterHub è gratuita. Eventuali quote le decide l’organizzatore del torneo.</div></div>
+      <div><b>Come funziona la lista d’attesa?</b><div class="sub">Se un torneo è già iniziato o al completo ti metti in lista: quando si libera un posto l’organizzatore chiama in ordine di lista.</div></div>
+      <div><b>Come creo la mia lega?</b><div class="sub">Da “Crea la tua competizione” scegli il modello o le tue regole e l’abbonamento: ti ricontattiamo per l’attivazione.</div></div>
+    </div></div>`;
+}
+function viewProfilo(){
+  const me = S.me || {}, regs = S.regs.filter(r => r.user_id === S.user.id), reqs = S.reqs.filter(r => r.user_id === S.user.id), subs = S.subs.filter(s => s.user_id === S.user.id);
+  return `<h1 class="disp">Il mio profilo</h1>
+  <form id="profform" class="card stack">
+    <label class="f">Nickname<input name="nick" value="${esc(me.nickname)}" required maxlength="24"></label>
+    ${me.is_admin ? `<label class="f">Numero WhatsApp dell’assistenza (visibile a tutti)<input name="wa" type="tel" value="${esc(me.whatsapp || '')}" inputmode="tel"></label>` : ''}
+    <span class="mut">Email: ${esc(S.user.email)}${me.is_admin ? ' · amministratore' : ''}</span>
+    <button class="btn" type="submit">Salva</button></form>
+  <h2 class="disp">Iscrizioni</h2>
+  <div class="list">${regs.map(r => { const c = comp(r.competition_id); return c ? `<div class="li"><span class="n"><b>${esc(c.name)}</b><br><span class="mut">${r.status === 'attesa' ? 'In lista d’attesa' : 'Iscritto'} dal ${day(r.created_at)}</span></span><button class="btn sm bad" data-act="leave" data-id="${c.id}">Esci</button></div>` : ''; }).join('') || '<div class="empty card">Nessuna iscrizione.</div>'}</div>
+  <h2 class="disp">Richieste di competizione</h2>
+  <div class="list">${reqs.map(r => `<div class="li"><span class="n"><b>${esc(r.name)}</b><br><span class="mut">${esc(PLANS[r.plan]?.n)} · inviata il ${day(r.created_at)}</span></span><span class="pill ${r.status === 'attiva' ? 'p-open' : r.status === 'rifiutata' ? 'p-end' : 'p-wait'}">${esc(REQ_ST[r.status]).toUpperCase()}</span></div>`).join('') || '<div class="empty card">Nessuna richiesta. <a href="#crea">Crea la tua competizione</a></div>'}</div>
+  <h2 class="disp">Abbonamento</h2>
+  <div class="list">${subs.map(s => `<div class="li"><span class="n"><b>${esc(PLANS[s.plan]?.n)}</b><br><span class="mut">dal ${day(s.starts_on)} al ${day(s.ends_on)}</span></span>${new Date(s.ends_on) >= new Date(new Date().toDateString()) ? '<span class="pill p-open">ATTIVO</span>' : '<span class="pill p-end">SCADUTO</span>'}</div>`).join('') || '<div class="empty card">Nessun abbonamento. <a href="#abbonamenti">Vedi i piani</a></div>'}</div>
+  <button class="btn ghost full" style="margin-top:20px" data-act="logout">Esci dall’account</button>`;
+}
+
+/* ---------- admin ---------- */
+function viewAdmin(tab){
+  if (!isAdmin()) return '<div class="empty card">Area riservata agli amministratori.</div>';
+  S.atab = ['richieste', 'competizioni', 'abbonamenti', 'sponsor'].includes(tab) ? tab : 'richieste';
+  const t = (k, l) => `<a href="#admin/${k}" class="${S.atab === k ? 'on' : ''}">${l}</a>`;
+  const nNew = S.reqs.filter(r => r.status === 'nuova').length;
+  let body = '';
+  if (S.atab === 'richieste') body = S.reqs.map(r => `<div class="card stack">
+      <div class="row" style="justify-content:space-between"><b class="disp" style="font-size:24px">${esc(r.name)}</b><span class="pill ${r.status === 'nuova' ? 'p-live' : r.status === 'attiva' ? 'p-open' : 'p-wait'}">${esc(REQ_ST[r.status]).toUpperCase()}</span></div>
+      <span class="sub">${esc(nick(r.user_id))} · ${day(r.created_at)} · ${r.base === 'modello' ? 'Modello League Manager' : 'Personalizzato'} · ${esc(r.game)} · ${r.teams} squadre · ${esc(r.mode)}</span>
+      <span class="sub">Abbonamento: <b>${esc(PLANS[r.plan]?.n)}</b>${r.modules?.length ? ` · Moduli: ${r.modules.map(esc).join(', ')}` : ''}</span>
+      ${r.notes ? `<div class="notice">${esc(r.notes)}</div>` : ''}
+      <div class="row">${waLink(r.whatsapp) ? `<a class="btn sm" href="${waLink(r.whatsapp)}" target="_blank" rel="noopener">WhatsApp ${esc(r.whatsapp)}</a>` : ''}
+        <select aria-label="Stato richiesta" data-act="req-status" data-id="${r.id}" style="width:auto;padding:9px">${Object.entries(REQ_ST).map(([k, v]) => `<option value="${k}"${k === r.status ? ' selected' : ''}>${v}</option>`).join('')}</select></div></div>`).join('') || '<div class="empty card">Nessuna richiesta per ora.</div>';
+  if (S.atab === 'competizioni') body = `<button class="btn full" data-act="comp-edit" data-id="">+ Nuova competizione</button>` + S.comps.map(c => `<div class="card stack">
+      <div class="row" style="justify-content:space-between"><b class="disp" style="font-size:24px">${esc(c.name)}</b><span class="pill ${ST[c.status][1]}">${ST[c.status][0]}</span></div>
+      <span class="sub">${inOf(c.id).length}/${c.max_teams} iscritti · ${waitOf(c.id).length} in attesa</span>
+      <div class="row"><button class="btn sm" data-act="comp-edit" data-id="${c.id}">Modifica</button><button class="btn sm ghost" data-act="comp-people" data-id="${c.id}">Iscritti e lista d’attesa</button></div></div>`).join('');
+  if (S.atab === 'abbonamenti') body = `<button class="btn full" data-act="sub-new">+ Attiva abbonamento</button>` + S.subs.map(s => `<div class="li"><span class="n"><b>${esc(nick(s.user_id))}</b> · ${esc(PLANS[s.plan]?.n)}<br><span class="mut">dal ${day(s.starts_on)} al ${day(s.ends_on)}${s.note ? ' · ' + esc(s.note) : ''}</span></span>${new Date(s.ends_on) >= new Date(new Date().toDateString()) ? '<span class="pill p-open">ATTIVO</span>' : '<span class="pill p-end">SCADUTO</span>'}</div>`).join('');
+  if (S.atab === 'sponsor') body = `<button class="btn full" data-act="sp-edit" data-id="">+ Nuovo sponsor</button>` + S.allSponsors.map(s => `<div class="li"><span class="n"><b>${esc(s.name)}</b><br><span class="mut">${esc(s.contact || '')}${s.active ? '' : ' · nascosto'}</span></span><button class="btn sm ghost" data-act="sp-edit" data-id="${s.id}">Modifica</button></div>`).join('');
+  return `<h1 class="disp">Pannello admin</h1>
+  <div class="tabs">${t('richieste', 'Richieste' + (nNew ? ` (${nNew})` : ''))}${t('competizioni', 'Competizioni')}${t('abbonamenti', 'Abbonamenti')}${t('sponsor', 'Sponsor')}</div>
+  <div class="stack">${body}</div>`;
+}
+
+/* ---------- modali ---------- */
+function modal(title, body, onSubmit, label = 'Salva'){
+  const d = $('#dlg');
+  d.innerHTML = `<form method="dialog" id="mform"><h3 class="disp">${title}</h3>${body}<p class="err" id="merr" hidden></p>
+    <div class="row" style="justify-content:flex-end"><button type="button" class="btn ghost" id="mclose">Chiudi</button>${onSubmit ? `<button class="btn" type="submit" id="mok">${label}</button>` : ''}</div></form>`;
+  d.showModal();
+  $('#mclose').onclick = () => d.close();
+  const f = $('#mform');
+  f.onsubmit = async e => { e.preventDefault(); if (!onSubmit) return d.close();
+    const b = $('#mok'), er = $('#merr'); er.hidden = true; b.disabled = true;
+    try { await onSubmit(new FormData(f), f); d.close(); await refresh(); } catch (err){ er.textContent = errIt(err); er.hidden = false; } finally { b.disabled = false; } };
+  return f;
+}
+function rulesModal(c){
+  modal(esc(c.name), `<div class="row"><span class="tag">${esc(c.game)}</span><span class="tag">${esc(c.mode)}</span><span class="tag">${esc(c.platforms)}</span></div>
+    <div class="sub" style="white-space:pre-line">${esc(c.rules) || 'Il regolamento non è ancora stato pubblicato.'}</div>
+    ${safeUrl(c.site_url) ? `<a class="btn ghost" href="${esc(c.site_url)}" target="_blank" rel="noopener">Regolamento completo sul sito della lega</a>` : ''}`, null);
+}
+function peopleModal(c, admin){
+  const row = (r, i) => `<div class="li"><span class="n">${i + 1}. <b>${esc(nick(r.user_id))}</b>${r.team_wish ? `<br><span class="mut">${esc(r.team_wish)}</span>` : ''}</span>${admin ? `<span class="row">${r.status === 'attesa' ? `<button type="button" class="btn sm" data-reg="promote" data-u="${r.user_id}">Fai entrare</button>` : `<button type="button" class="btn sm ghost" data-reg="wait" data-u="${r.user_id}">In attesa</button>`}<button type="button" class="btn sm bad" data-reg="del" data-u="${r.user_id}" aria-label="Rimuovi">✕</button></span>` : ''}</div>`;
+  const a = inOf(c.id), w = waitOf(c.id);
+  modal(`Iscritti · ${esc(c.name)}`, `<b>Iscritti (${a.length}/${c.max_teams})</b><div class="list">${a.map(row).join('') || '<span class="mut">Nessuno.</span>'}</div>
+    <b>Lista d’attesa (${w.length})</b><div class="list">${w.map(row).join('') || '<span class="mut">Nessuno.</span>'}</div>`, null);
+  if (admin) $('#dlg').querySelectorAll('[data-reg]').forEach(b => b.onclick = async () => {
+    try { const u = b.dataset.u, k = b.dataset.reg, base = sb.from('registrations');
+      if (k === 'del'){ if (!confirm('Rimuovo questo manager dalla competizione?')) return; await q(base.delete().eq('competition_id', c.id).eq('user_id', u)); }
+      else await q(base.update({status: k === 'promote' ? 'iscritto' : 'attesa'}).eq('competition_id', c.id).eq('user_id', u));
+      $('#dlg').close(); await refresh(); peopleModal(comp(c.id), true); } catch (e){ toast(errIt(e)); } });
+}
+function joinModal(c){
+  const n = inOf(c.id).length, wait = !(c.status === 'iscrizioni' && n < c.max_teams);
+  modal(wait ? 'Lista d’attesa' : 'Iscrizione', `<p class="sub">${wait ? `<b>${esc(c.name)}</b> ${c.status === 'in_corso' ? 'è già iniziata' : 'è al completo'}: entri in lista d’attesa e l’organizzatore ti chiama quando si libera un posto.` : `Ti iscrivi a <b>${esc(c.name)}</b>.`}</p>
+    <label class="f">Squadra o preferenza (facoltativo)<input name="wish" maxlength="80" placeholder="es. Napoli, oppure una squadra di Serie B"></label>`,
+    async fd => { await q(sb.from('registrations').insert({competition_id: c.id, user_id: S.user.id, team_wish: String(fd.get('wish') || '').trim() || null})); toast(wait ? 'Sei in lista d’attesa' : 'Iscrizione fatta'); },
+    wait ? 'Entra in lista' : 'Iscriviti');
+}
+function compModal(c){
+  const v = c || {name: '', game: 'FC 27', platforms: 'PS, Xbox, PC', mode: 'CPU contro CPU', status: 'iscrizioni', max_teams: 16, rules: '', whatsapp: '', site_url: '', organizer: '', sort: 0};
+  const f = modal(c ? 'Modifica competizione' : 'Nuova competizione', `
+    <label class="f">Nome<input name="name" required value="${esc(v.name)}"></label>
+    <div class="grid2"><label class="f">Gioco<input name="game" required value="${esc(v.game)}"></label><label class="f">Squadre<input name="max" type="number" min="2" max="200" required value="${v.max_teams}"></label></div>
+    <label class="f">Piattaforme<input name="plat" value="${esc(v.platforms)}"></label>
+    <label class="f">Chi gioca le partite<input name="mode" value="${esc(v.mode)}"></label>
+    <label class="f">Stato<select name="status">${Object.entries(ST).map(([k, s]) => `<option value="${k}"${k === v.status ? ' selected' : ''}>${s[0].toLowerCase()}</option>`).join('')}</select></label>
+    <label class="f">Organizzatore<input name="org" value="${esc(v.organizer || '')}"></label>
+    <label class="f">WhatsApp organizzatore<input name="wa" type="tel" value="${esc(v.whatsapp || '')}"></label>
+    <label class="f">Sito della lega (https://…)<input name="site" type="url" value="${esc(v.site_url || '')}"></label>
+    <label class="f">Regolamento<textarea name="rules" rows="6">${esc(v.rules)}</textarea></label>
+    <label class="f">Ordine nell’elenco<input name="sort" type="number" value="${v.sort}"></label>
+    ${c ? '<button type="button" class="btn bad sm" id="cdel">Elimina competizione</button>' : ''}`,
+    async fd => { const row = {name: String(fd.get('name')).trim(), game: String(fd.get('game')).trim(), max_teams: +fd.get('max'), platforms: String(fd.get('plat')).trim(), mode: String(fd.get('mode')).trim(),
+        status: String(fd.get('status')), organizer: String(fd.get('org')).trim() || null, whatsapp: String(fd.get('wa')).trim() || null, site_url: safeUrl(String(fd.get('site')).trim()) || null, rules: String(fd.get('rules')), sort: +fd.get('sort') || 0};
+      if (!row.name) fail('Scrivi il nome.');
+      if (c) await q(sb.from('competitions').update(row).eq('id', c.id)); else await q(sb.from('competitions').insert(row));
+      toast('Competizione salvata'); });
+  const del = f.querySelector('#cdel'); if (del) del.onclick = async () => { if (!confirm(`Elimino "${c.name}" con iscritti e lista d’attesa? Non si può annullare.`)) return;
+    try { await q(sb.from('competitions').delete().eq('id', c.id)); $('#dlg').close(); toast('Competizione eliminata'); await refresh(); } catch (e){ toast(errIt(e)); } };
+}
+function subModal(){
+  const today = new Date().toISOString().slice(0, 10), next = new Date(Date.now() + 365 * 864e5).toISOString().slice(0, 10);
+  modal('Attiva abbonamento', `<label class="f">Organizzatore<select name="user" required><option value="">Scegli…</option>${S.profiles.map(p => `<option value="${p.id}">${esc(p.nickname)}</option>`).join('')}</select></label>
+    <label class="f">Piano<select name="plan">${Object.entries(PLANS).map(([k, v]) => `<option value="${k}">${v.n} · ${v.p}</option>`).join('')}</select></label>
+    <div class="grid2"><label class="f">Dal<input name="from" type="date" value="${today}" required></label><label class="f">Al<input name="to" type="date" value="${next}" required></label></div>
+    <label class="f">Nota (es. pagato con PayPal)<input name="note" maxlength="200"></label>`,
+    async fd => { if (!fd.get('user')) fail('Scegli l’organizzatore.');
+      await q(sb.from('subscriptions').insert({user_id: fd.get('user'), plan: fd.get('plan'), starts_on: fd.get('from'), ends_on: fd.get('to'), note: String(fd.get('note') || '')})); toast('Abbonamento attivato'); }, 'Attiva');
+}
+function spModal(s){
+  const v = s || {name: '', link: '', contact: '', sort: 0, active: true};
+  const f = modal(s ? 'Modifica sponsor' : 'Nuovo sponsor', `<label class="f">Nome<input name="name" required value="${esc(v.name)}"></label>
+    <label class="f">Contatto mostrato (telefono, Instagram…)<input name="contact" value="${esc(v.contact || '')}"></label>
+    <label class="f">Link (https://…)<input name="link" type="url" value="${esc(v.link || '')}"></label>
+    <div class="grid2"><label class="f">Ordine<input name="sort" type="number" value="${v.sort}"></label><label class="tog" style="align-self:end"><span>Visibile</span><input type="checkbox" name="active"${v.active ? ' checked' : ''}></label></div>
+    ${s ? '<button type="button" class="btn bad sm" id="sdel">Elimina sponsor</button>' : ''}`,
+    async fd => { const row = {name: String(fd.get('name')).trim(), contact: String(fd.get('contact')).trim() || null, link: safeUrl(String(fd.get('link')).trim()) || null, sort: +fd.get('sort') || 0, active: !!fd.get('active')};
+      if (s) await q(sb.from('sponsors').update(row).eq('id', s.id)); else await q(sb.from('sponsors').insert(row)); toast('Sponsor salvato'); });
+  const del = f.querySelector('#sdel'); if (del) del.onclick = async () => { if (!confirm('Elimino questo sponsor?')) return; try { await q(sb.from('sponsors').delete().eq('id', s.id)); $('#dlg').close(); await refresh(); } catch (e){ toast(errIt(e)); } };
+}
+
+/* ---------- render e azioni ---------- */
+function route(){ const h = (location.hash || '#home').slice(1).split('/'); return {r: h[0] || 'home', a: h[1] || ''}; }
+async function render(){
+  const app = $('#app');
+  if (!S.user){ app.innerHTML = viewAuth(); bindAuth(); return; }
+  if (!S.ready){ app.innerHTML = '<div class="empty" style="padding-top:40vh">Caricamento…</div>'; return; }
+  const {r, a} = route();
+  if (r === 'admin' && isAdmin() && !S.allSponsors){ try { S.allSponsors = await q(sb.from('sponsors').select('*').order('sort')); } catch (e){ S.allSponsors = []; } }
+  const views = {home: viewHome, tornei: () => viewTornei(a), crea: () => viewCrea(a), abbonamenti: viewAbbonamenti, assistenza: viewAssistenza, profilo: viewProfilo, admin: () => viewAdmin(a)};
+  app.innerHTML = headerHTML(r) + `<main class="wrap">${(views[r] || viewHome)()}</main>` + sponsorsHTML();
+  bindPage(r);
+}
+function bindAuth(){
+  const f = $('#authform'); if (!f) return;
+  f.onsubmit = async e => { e.preventDefault(); const fd = new FormData(f), er = $('#autherr'), b = f.querySelector('[type=submit]'); er.hidden = true; b.disabled = true;
+    try { const email = String(fd.get('email')).trim(), password = String(fd.get('pass'));
+      if (S.authMode === 'register'){ const nk = String(fd.get('nick')).trim(); if (nk.length < 2) fail('Scegli un nickname di almeno 2 caratteri.');
+        const r = await sb.auth.signUp({email, password, options: {data: {nickname: nk}}}); if (r.error) throw r.error;
+        if (!r.data.session) { toast('Controlla la tua email per confermare l’account'); } }
+      else { const r = await sb.auth.signInWithPassword({email, password}); if (r.error) throw r.error; }
+    } catch (err){ er.textContent = errIt(err); er.hidden = false; } finally { b.disabled = false; } };
+}
+function bindPage(r){
+  const cf = $('#creaform'); if (cf) cf.onsubmit = async e => { e.preventDefault(); const fd = new FormData(cf), er = $('#creaerr'), b = cf.querySelector('[type=submit]'); er.hidden = true; b.disabled = true;
+    try { const wa = String(fd.get('wa')).trim(); if (wa.replace(/\D/g, '').length < 8) fail('Scrivi un numero WhatsApp valido.');
+      await q(sb.from('requests').insert({user_id: S.user.id, base: fd.get('base'), name: String(fd.get('name')).trim(), game: fd.get('game'), teams: +fd.get('teams'), mode: fd.get('mode'), modules: fd.getAll('mod'), plan: fd.get('plan'), notes: String(fd.get('notes') || ''), whatsapp: wa}));
+      toast('Richiesta inviata: ti contattiamo su WhatsApp'); location.hash = '#profilo'; await refresh();
+    } catch (err){ er.textContent = errIt(err); er.hidden = false; } finally { b.disabled = false; } };
+  const pf = $('#profform'); if (pf) pf.onsubmit = async e => { e.preventDefault(); const fd = new FormData(pf);
+    try { const row = {nickname: String(fd.get('nick')).trim()}; if (row.nickname.length < 2) fail('Nickname troppo corto.');
+      if (fd.has('wa')) row.whatsapp = String(fd.get('wa')).trim() || null;
+      await q(sb.from('profiles').update(row).eq('id', S.user.id)); toast('Profilo salvato'); await refresh(); } catch (err){ toast(errIt(err)); } };
+}
+document.addEventListener('click', async e => {
+  const el = e.target.closest('[data-act]'); if (!el || el.tagName === 'SELECT') return;
+  const act = el.dataset.act, id = el.dataset.id;
+  try {
+    if (act === 'auth-mode'){ S.authMode = id; render(); return; }
+    if (act === 'reset-pass'){ const em = $('#authform input[name=email]').value.trim(); if (!em) return toast('Scrivi prima la tua email');
+      const r = await sb.auth.resetPasswordForEmail(em, {redirectTo: location.origin + location.pathname}); if (r.error) throw r.error; return toast('Ti abbiamo mandato una email per reimpostare la password'); }
+    if (act === 'logout'){ await sb.auth.signOut(); return; }
+    if (act === 'filter'){ location.hash = '#tornei/' + id; return; }
+    if (act === 'join') return joinModal(comp(id));
+    if (act === 'leave'){ const c = comp(id); if (!confirm(`Esci da ${c.name}? Se rientri, finisci in fondo alla lista.`)) return;
+      await q(sb.from('registrations').delete().eq('competition_id', c.id).eq('user_id', S.user.id)); toast('Fatto'); return refresh(); }
+    if (act === 'rules') return rulesModal(comp(id));
+    if (act === 'people') return peopleModal(comp(id), false);
+    if (act === 'comp-people') return peopleModal(comp(id), true);
+    if (act === 'comp-edit') return compModal(id ? comp(id) : null);
+    if (act === 'sub-new') return subModal();
+    if (act === 'sp-edit') return spModal(id ? S.allSponsors.find(s => s.id === +id) : null);
+  } catch (err){ toast(errIt(err)); }
+});
+document.addEventListener('change', async e => {
+  const el = e.target.closest('select[data-act="req-status"]'); if (!el) return;
+  try { await q(sb.from('requests').update({status: el.value}).eq('id', +el.dataset.id)); toast('Stato aggiornato'); await refresh(); } catch (err){ toast(errIt(err)); }
+});
+document.addEventListener('toggle', e => { if (e.target.tagName === 'DETAILS' && e.target.open) document.querySelectorAll('nav.menu details[open]').forEach(d => { if (d !== e.target) d.open = false; }); }, true);
+document.addEventListener('click', e => { if (!e.target.closest('nav.menu')) document.querySelectorAll('nav.menu details[open]').forEach(d => d.open = false); });
+window.addEventListener('hashchange', () => { document.querySelectorAll('nav.menu details[open]').forEach(d => d.open = false); S.allSponsors = route().r === 'admin' ? S.allSponsors : null; render(); window.scrollTo(0, 0); });
+document.addEventListener('visibilitychange', () => { if (!document.hidden && S.user) refresh(); });
+sb.auth.onAuthStateChange((ev, session) => {
+  const u = session?.user || null, changed = (u?.id || null) !== (S.user?.id || null);
+  S.user = u;
+  if (!u){ S.ready = false; S.me = null; render(); return; }
+  if (changed){ S.ready = false; render(); setTimeout(refresh, 0); }
+});
+(async () => { const {data} = await sb.auth.getSession(); S.user = data.session?.user || null; if (S.user) await refresh(); else render(); })();
+</script>
+</body>
+</html>
