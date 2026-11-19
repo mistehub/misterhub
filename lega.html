@@ -2255,7 +2255,7 @@ function invitePanel(){
 }
 function usersPanel(){
   if (!S.comm) return '';
-  return invitePanel() + usersPanel0();
+  return startPanel() + invitePanel() + usersPanel0();
 }
 function usersPanel0(){
   if (!usersCache){ setTimeout(() => loadUsers(), 0); return `<div class="panel"><div class="ph"><h3>Manager registrati</h3></div><p class="muted">Caricamento…</p></div>`; }
@@ -2606,8 +2606,159 @@ function viewPre(){
 }
 const preBanner = () => { const mc = myClub(); return preOn() && !S.pre.done && S.route !== 'precampionato' && mc && preCanPick(mc.id) ? `<div class="notice" style="margin-bottom:14px">🏟️ Precampionato: <b>tocca a te scegliere il girone!</b> · <a href="#precampionato">Vai al precampionato</a></div>` : ''; };
 
+/* ---------- avvio lega: squadre e rose ---------- */
+let FC = null;
+async function fcData(){
+  if (FC) return FC;
+  const r = await fetch('fc27.json'); if (!r.ok) fail('Non riesco a scaricare il database FC 27. Riprova.');
+  FC = await r.json(); return FC;
+}
+const ST_COLORS = ['#1c4fd6','#c8102e','#0b7a3b','#111111','#f2c200','#6d2c91','#e05a00','#0096d6','#8a1538','#2e7d32'];
+const stCid = () => 'c' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
+const stShort = n => (String(n).normalize('NFKD').replace(/[^A-Za-z]/g, '').slice(0, 3) || 'SQD').toUpperCase();
+function stClub(name, div, i){
+  return {col: 'clubs', id: stCid(), data: {name, short: stShort(name), color: ST_COLORS[i % ST_COLORS.length], budget0: divBudget(div), wage0: divWage(div),
+    div, managerId: null, objectives: [], createdAt: now() + i, logo: null}};
+}
+function stPlayer(id, name, pos, age, ovr, clubId){
+  return {col: 'players', id, data: {name, pos, age, ageSeason: season(), ovr, value: autoValue(ovr, age), wage: autoWage(ovr, age), injured: false, clubId: clubId || null, loan: null}};
+}
+const fcRow = (x, clubId) => stPlayer('fc' + x[0], x[1], x[2], x[3], x[4], clubId);
+async function stWrite(rows, label){
+  importing.on = true;
+  try {
+    for (let i = 0; i < rows.length; i += 500){
+      const {error} = await LD().upsert(rows.slice(i, i + 500), {onConflict: 'col,id', ignoreDuplicates: true});
+      if (error) throw dbErr(error);
+      if (rows.length > 500) toast(`${label}: ${Math.min(i + 500, rows.length)} di ${rows.length}…`, 3000);
+    }
+  } finally { importing.on = false; }
+  ['clubs', 'players'].forEach(c => listeners[c] && reload(c));
+}
+const POOL_OPTS = [['0', 'Nessuno'], ['75', 'Solo overall 75 o più'], ['70', 'Overall 70 o più'], ['65', 'Overall 65 o più'], ['1', 'Tutti i giocatori di FC 27']];
+const poolSel = def => sel('pool', 'Svincolati da aggiungere (gli altri giocatori di FC 27, liberi sul mercato)', POOL_OPTS, def, true);
+function stPool(fc, min, used){
+  if (!min) return [];
+  return fc.p.filter(x => x[4] >= min && !used.has('fc' + x[0])).map(x => fcRow(x, null));
+}
+function startPanel(){
+  if (!S.comm || !S.settings) return '';
+  const empty = !S.clubs.length;
+  const opt = (act, t, d) => `<button type="button" class="btn" data-act="${act}" style="text-align:left;display:block;width:100%;padding:12px 14px;white-space:normal"><b>${t}</b><br><span class="sub">${d}</span></button>`;
+  return `<div class="panel"><div class="ph"><h3>${empty ? 'Come vuoi partire?' : 'Aggiungi squadre e rose'}</h3></div>
+    <p class="sub">${empty ? 'Scegli come creare le squadre della lega. Dopo puoi sempre modificare tutto a mano: nomi, rose, budget.' : 'Puoi aggiungere altre squadre o giocatori quando vuoi.'}</p>
+    <div style="display:grid;gap:8px">
+      ${opt('st-real', 'Rose originali FC 27', 'Scegli i campionati: il sito crea le squadre con le rose vere del gioco.')}
+      ${opt('st-build', 'Rose da costruire', 'Crei tu le squadre con i nomi che vuoi; i giocatori di FC 27 vanno tra gli svincolati e i manager li prendono con aste e mercato.')}
+      ${opt('st-file', 'Rose già personalizzate', 'Scarichi il modello, lo compili con le tue rose e lo ricarichi: il sito abbina i giocatori a FC 27.')}
+    </div></div>`;
+}
+async function stReal(){
+  toast('Carico il database FC 27…', 4000);
+  const fc = await fcData();
+  const nClubs = fc.leagues.map((_, i) => fc.clubs.filter(c => c[1] === i).length);
+  const lopts = [['', '— nessuno —'], ...fc.leagues.map((l, i) => [String(i), `${l} (${nClubs[i]} squadre)`])];
+  openModal('Rose originali FC 27', `<p class="sub">Le squadre del primo campionato vanno in Serie A del sito, quelle del secondo (se lo scegli) in Serie B.</p>
+    ${sel('la', 'Campionato principale', lopts.slice(1), '0', true)}
+    ${sel('lb', 'Secondo campionato (facoltativo)', lopts, '1', true)}
+    ${poolSel('70')}
+    <p class="sub">Le squadre con un nome già presente nella lega vengono saltate.</p>`,
+    async fd => {
+      const la = +fd.get('la'), lb = fd.get('lb') === '' ? -1 : +fd.get('lb');
+      if (la === lb) fail('Scegli due campionati diversi.');
+      const have = new Set(S.clubs.map(c => normKey(c.name))), used = new Set(S.players.map(p => p.id));
+      const clubs = [], players = []; let i = S.clubs.length;
+      [[la, 'A'], [lb, 'B']].forEach(([li, div]) => { if (li < 0) return;
+        fc.clubs.forEach((c, ci) => { if (c[1] !== li || have.has(normKey(c[0]))) return;
+          const row = stClub(c[0], div, i++); clubs.push(row);
+          fc.p.forEach(x => { if (x[5] === ci && !used.has('fc' + x[0])){ used.add('fc' + x[0]); players.push(fcRow(x, row.id)); } }); }); });
+      if (!clubs.length) fail('Nessuna squadra nuova da aggiungere.');
+      const pool = stPool(fc, +fd.get('pool'), used);
+      await stWrite(clubs, 'Squadre'); await stWrite([...players, ...pool], 'Giocatori');
+      toast(`Create ${clubs.length} squadre con ${players.length} giocatori${pool.length ? ` · ${pool.length} svincolati` : ''}`, 6000);
+    }, 'Crea squadre');
+}
+async function stBuild(){
+  openModal('Rose da costruire', `<div class="f full"><label for="stn">Nomi delle squadre (uno per riga)</label><textarea id="stn" name="stn" rows="8" placeholder="Leoni FC&#10;Real Aquile&#10;Sporting Lupi"></textarea></div>
+    ${sel('div', 'Divisione', [['A', 'Serie A'], ['B', 'Serie B']], 'A', true)}
+    ${poolSel('70')}
+    <p class="sub">Le squadre nascono senza giocatori. Il commissario può assegnarli a mano, oppure i manager li prendono dagli svincolati con aste e mercato.</p>`,
+    async fd => {
+      const have = new Set(S.clubs.map(c => normKey(c.name)));
+      const names = [...new Set(String(fd.get('stn') || '').split('\n').map(x => x.trim()).filter(Boolean))].filter(n => !have.has(normKey(n)));
+      const min = +fd.get('pool');
+      if (!names.length && !min) fail('Scrivi almeno il nome di una squadra.');
+      const clubs = names.map((n, i) => stClub(n.slice(0, 40), fd.get('div') === 'B' ? 'B' : 'A', S.clubs.length + i));
+      let pool = [];
+      if (min){ toast('Carico il database FC 27…', 4000); pool = stPool(await fcData(), min, new Set(S.players.map(p => p.id))); }
+      if (clubs.length) await stWrite(clubs, 'Squadre');
+      if (pool.length) await stWrite(pool, 'Svincolati');
+      toast(`Create ${clubs.length} squadre${pool.length ? ` · ${pool.length} svincolati sul mercato` : ''}`, 6000);
+    }, 'Crea');
+}
+const ST_TPL = 'squadra;giocatore;ruolo;overall;eta;serie\nLeoni FC;Mike Maignan;POR;87;31;A\nLeoni FC;Nicolò Barella;CC;;;A\nReal Aquile;Mario Rossi;ATT;68;22;A\n';
+const ST_ROLE = {GK:'POR',CB:'DC',RB:'TD',LB:'TS',RWB:'TD',LWB:'TS',CDM:'CDC',CM:'CC',CAM:'COC',RM:'ED',LM:'ES',RW:'AD',LW:'AS',ST:'ATT',CF:'ATT',PT:'POR',P:'POR',DIF:'DC',CEN:'CC',TRQ:'COC',ATT:'ATT'};
+const stRole = r => { const u = String(r || '').trim().toUpperCase(); return POS.includes(u) ? u : ST_ROLE[u] || ''; };
+function stRows(t){
+  t = String(t).replace(/^﻿/, '');
+  const first = t.split(/\r?\n/)[0] || '';
+  if (first.includes(';')) return t.split(/\r?\n/).filter(l => l.trim()).map(l => l.split(';').map(x => x.replace(/^"|"$/g, '')));
+  if (first.includes('\t')) return t.split(/\r?\n/).filter(l => l.trim()).map(l => l.split('\t'));
+  return parseCSV(t);
+}
+async function stFile(){
+  const url = URL.createObjectURL(new Blob(['﻿' + ST_TPL], {type: 'text/csv'}));
+  const f = openModal('Rose già personalizzate', `<p><b>1.</b> Scarica il modello e aprilo con Excel o Google Fogli.</p>
+    <a class="btn" href="${url}" download="modello-rose-misterhub.csv">Scarica il modello</a>
+    <p class="sub">Una riga per giocatore. Servono solo <b>squadra</b> e <b>giocatore</b>: ruolo, overall ed età li prende da FC 27. Compilali solo per i giocatori inventati o se vuoi cambiarli. La colonna <b>serie</b> (A o B) è facoltativa.</p>
+    <p><b>2.</b> Salva il file come <b>CSV</b> e caricalo qui.</p>
+    <div class="f full"><input type="file" id="stf" name="stf" accept=".csv,text/csv,text/plain"></div>
+    ${poolSel('0')}`,
+    async fd => {
+      const file = f.querySelector('#stf').files[0]; if (!file) fail('Scegli il file con le rose.');
+      const rows = stRows(await file.text());
+      const head = (rows.shift() || []).map(h => normKey(h)); const ix = k => head.indexOf(k);
+      if (ix('squadra') < 0 || ix('giocatore') < 0) fail('Il file deve avere le colonne squadra e giocatore (usa il modello).');
+      toast('Carico il database FC 27…', 4000);
+      const fc = await fcData();
+      const full = new Map(), last = new Map();
+      fc.p.forEach(x => { const k = normKey(x[1]); if (!full.has(k)) full.set(k, []); full.get(k).push(x);
+        const l = normKey(String(x[1]).split(/\s+/).pop()); if (!last.has(l)) last.set(l, []); last.get(l).push(x); });
+      const clubsBy = new Map(S.clubs.map(c => [normKey(c.name), c.id])), newClubs = [], players = [], miss = [], used = new Set(S.players.map(p => p.id));
+      const exF = new Map(), exL = new Map();
+      S.players.forEach(p => { const k = normKey(p.name); if (!exF.has(k)) exF.set(k, []); exF.get(k).push(p);
+        const l = normKey(String(p.name || '').split(/\s+/).pop()); if (!exL.has(l)) exL.set(l, []); exL.get(l).push(p); });
+      const moves = [], moved = new Set(); let ok = 0, inv = 0;
+      for (const r of rows){
+        const sq = String(r[ix('squadra')] || '').trim(), nm = String(r[ix('giocatore')] || '').trim(); if (!sq || !nm) continue;
+        const role = stRole(r[ix('ruolo')]), ovr = parseInt(r[ix('overall')]) || 0, age = parseInt(r[ix('eta')]) || 0;
+        const div = String(r[ix('serie')] || '').trim().toUpperCase() === 'B' ? 'B' : 'A';
+        let cid = clubsBy.get(normKey(sq));
+        if (!cid){ const c = stClub(sq.slice(0, 40), div, S.clubs.length + newClubs.length); newClubs.push(c); cid = c.id; clubsBy.set(normKey(sq), cid); }
+        let cands = (full.get(normKey(nm)) || []).filter(x => !used.has('fc' + x[0]));
+        if (!cands.length) cands = (last.get(normKey(nm.split(/\s+/).pop())) || []).filter(x => !used.has('fc' + x[0]) && (nm.split(/\s+/).length === 1 || normKey(x[1])[0] === normKey(nm)[0]));
+        if (ovr) cands.sort((a, b) => Math.abs(a[4] - ovr) - Math.abs(b[4] - ovr)); else cands.sort((a, b) => b[4] - a[4]);
+        const x = cands[0];
+        let ex = (exF.get(normKey(nm)) || []).filter(p => !moved.has(p.id));
+        if (!ex.length) ex = (exL.get(normKey(nm.split(/\s+/).pop())) || []).filter(p => !moved.has(p.id) && (nm.split(/\s+/).length === 1 || normKey(p.name)[0] === normKey(nm)[0]));
+        if (!x && ex.length){ const p = ex.sort((a, b) => (b.ovr || 0) - (a.ovr || 0))[0]; moved.add(p.id); ok++;
+          moves.push({id: p.id, patch: {clubId: cid, loan: null, ...(role ? {pos: role} : {}), ...(ovr ? {ovr, value: autoValue(ovr, age || p.age), wage: autoWage(ovr, age || p.age)} : {})}}); continue; }
+        if (x){ used.add('fc' + x[0]); ok++; players.push(stPlayer('fc' + x[0], x[1], role || x[2], age || x[3], ovr || x[4], cid)); }
+        else if (role && ovr){ inv++; players.push(stPlayer('x' + Math.random().toString(36).slice(2, 12), nm, role, age || 25, ovr, cid)); }
+        else miss.push(`${nm} (${sq})`);
+      }
+      if (!players.length && !newClubs.length && !moves.length) fail('Nel file non ho trovato righe valide.');
+      const pool = stPool(fc, +fd.get('pool'), used);
+      if (newClubs.length) await stWrite(newClubs, 'Squadre');
+      await stWrite([...players, ...pool], 'Giocatori');
+      for (let i = 0; i < moves.length; i += 10) await Promise.all(moves.slice(i, i + 10).map(m => db.doc('players/' + m.id).update(m.patch)));
+      setTimeout(() => openModal('Rose caricate', `<p><b>${newClubs.length}</b> squadre nuove · <b>${ok}</b> giocatori abbinati a FC 27 · <b>${inv}</b> giocatori inventati${pool.length ? ` · <b>${pool.length}</b> svincolati` : ''}.</p>
+        ${miss.length ? `<p><b>Non trovati (${miss.length})</b>: aggiungili a mano, oppure scrivi ruolo e overall nel file e ricaricalo.</p><div class="sub" style="max-height:30vh;overflow:auto">${miss.map(esc).join('<br>')}</div>` : '<p>Tutti i giocatori sono stati trovati.</p>'}`,
+        async () => {}, 'Ok'), 300);
+    }, 'Carica rose');
+}
 /* ---------- permessi ---------- */
-const COMM_ONLY = new Set(['inv-new','fx-add','fx-edit','fx-del','fx-clear','fa-file','draw-skip','draw-new','draw-next','draw-all','draw-end','start-budgets','live','assign','recalc','reset-league','settings','club-new','club-edit','club-leave','club-del','result','add-player','import','edit-player','auc-cancel','auc-time','fa-add','fa-import','fa-del','obj-add','obj-done','obj-fail','obj-del','adjust','window','gen','close-season']);
+const COMM_ONLY = new Set(['st-real','st-build','st-file','inv-new','fx-add','fx-edit','fx-del','fx-clear','fa-file','draw-skip','draw-new','draw-next','draw-all','draw-end','start-budgets','live','assign','recalc','reset-league','settings','club-new','club-edit','club-leave','club-del','result','add-player','import','edit-player','auc-cancel','auc-time','fa-add','fa-import','fa-del','obj-add','obj-done','obj-fail','obj-del','adjust','window','gen','close-season']);
 const MKT_ACTS = new Set(['sell','offer','redeem','auc-start','bid','cpu-buy','offer-accept','offer-counter']);
 /* ---------- events ---------- */
 document.addEventListener('click', async e => {
@@ -2627,6 +2778,9 @@ document.addEventListener('click', async e => {
       case 'club-claim': if (!S.me) return authModal(); if (!S.comm){ if (!S.draw?.active) return toast('Le panchine si scelgono solo con il sorteggio: aspetta che il commissario lo avvii.'); const pk = drawPicker(); if (!canPick(S.me)) return toast(pk ? `Non è il tuo turno: tocca a ${S.draw.names?.[pk] || 'un altro manager'}.` : 'Aspetta il sorteggio: il tuo nome non è ancora uscito.'); } await db.doc('clubs/' + id).update({managerId: S.me}); toast('Sei il nuovo allenatore'); break;
       case 'club-leave': confirmBox('Lascia la panchina', `${esc(club(id).name)} resterà nella lega senza allenatore.`, 'Conferma', async () => { await db.doc('clubs/' + id).update({managerId: null}); }); break;
       case 'club-del': delClubModal(club(id)); break;
+      case 'st-real': stReal().catch(e => toast(e.message, 5000)); break;
+      case 'st-build': stBuild(); break;
+      case 'st-file': stFile(); break;
       case 'inv-copy': try { await navigator.clipboard.writeText(inviteLink()); toast('Link copiato'); } catch { toast('Tieni premuto sul link per copiarlo'); } break;
       case 'inv-new': confirmBox('Nuovo link di invito', 'Il link vecchio smette di funzionare. Continuare?', 'Crea nuovo', async () => { await loadInvite(true); toast('Nuovo link pronto'); }); break;
       case 'reset-league': resetLeagueModal(); break;
