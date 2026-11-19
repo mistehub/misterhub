@@ -351,6 +351,7 @@ function viewAdmin(tab){
       <span class="sub">Abbonamento: <b>${esc(PLANS[r.plan]?.n)}</b>${r.modules?.length ? ` · Moduli: ${r.modules.map(esc).join(', ')}` : ''}</span>
       ${r.notes ? `<div class="notice">${esc(r.notes)}</div>` : ''}
       <div class="row">${waLink(r.whatsapp) ? `<a class="btn sm" href="${waLink(r.whatsapp)}" target="_blank" rel="noopener">WhatsApp ${esc(r.whatsapp)}</a>` : ''}
+        ${(lg => lg ? `<a class="btn sm" href="lega.html?l=${esc(lg.slug)}">Apri la sua lega</a>` : `<button class="btn sm" data-act="lg-req" data-id="${r.id}">Crea la sua lega</button>`)(S.leagues.find(l => l.slug === slugify(r.name)))}
         <select aria-label="Stato richiesta" data-act="req-status" data-id="${r.id}" style="width:auto;padding:9px">${Object.entries(REQ_ST).map(([k, v]) => `<option value="${k}"${k === r.status ? ' selected' : ''}>${v}</option>`).join('')}</select></div></div>`).join('') || '<div class="empty card">Nessuna richiesta per ora.</div>';
   if (S.atab === 'leghe') body = `<button class="btn full" data-act="lg-new">+ Crea una lega</button>` + S.leagues.map(l => { const cm = (l.league_members || []).filter(m => m.role === 'commissario');
       return `<div class="card stack"><b class="disp" style="font-size:24px">${esc(l.name)}</b>
@@ -445,9 +446,9 @@ function subModal(){
 }
 const slugify = v => String(v || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
 const userOpts = () => S.profiles.map(p => `<option value="${p.id}">${esc(p.nickname)}</option>`).join('');
-function leagueModal(){
-  const f = modal('Crea una lega', `<label class="f">Nome della lega<input name="name" required maxlength="60" placeholder="Es. Serie Manager Italia"></label>
-    <label class="f">Indirizzo<input name="slug" required maxlength="40" pattern="[a-z0-9-]{3,40}" placeholder="serie-manager-italia"><span class="mut">Il link sarà ${location.origin}/lega.html?l=<b id="slp">…</b></span></label>
+function leagueModal(pre = {}){
+  const f = modal('Crea una lega', `<label class="f">Nome della lega<input name="name" required maxlength="60" placeholder="Es. Serie Manager Italia" value="${esc(pre.name || '')}"></label>
+    <label class="f">Indirizzo<input name="slug" required maxlength="40" pattern="[a-z0-9-]{3,40}" placeholder="serie-manager-italia" value="${esc(slugify(pre.name || ''))}"><span class="mut">Il link sarà ${location.origin}/lega.html?l=<b id="slp">${esc(slugify(pre.name || '')) || '…'}</b></span></label>
     <label class="f">Commissario (il cliente)<select name="comm"><option value="">Lo scelgo dopo</option>${userOpts()}</select></label>
     <p class="mut">La lega nasce vuota: il commissario entra, imposta la lega, carica i giocatori e invia il link di invito ai suoi manager.</p>`,
     async fd => { const name = String(fd.get('name')).trim(), slug = slugify(fd.get('slug'));
@@ -455,7 +456,9 @@ function leagueModal(){
       if (S.leagues.some(l => l.slug === slug)) fail('Esiste già una lega con questo indirizzo.');
       const [lg] = await q(sb.from('leagues').insert({name, slug}).select('id'));
       if (fd.get('comm')) await q(sb.from('league_members').insert({league_id: lg.id, user_id: fd.get('comm'), role: 'commissario'}));
+      if (pre.reqId) await q(sb.from('requests').update({status: 'attiva'}).eq('id', pre.reqId));
       toast('Lega creata'); }, 'Crea lega');
+  if (pre.comm) f.elements.comm.value = pre.comm;
   const nm = f.elements.name, sl = f.elements.slug, pv = f.querySelector('#slp'); let touched = false;
   nm.oninput = () => { if (!touched){ sl.value = slugify(nm.value); pv.textContent = sl.value || '…'; } };
   sl.oninput = () => { touched = true; pv.textContent = slugify(sl.value) || '…'; };
@@ -533,6 +536,7 @@ document.addEventListener('click', async e => {
     if (act === 'people') return peopleModal(comp(id), false);
     if (act === 'comp-people') return peopleModal(comp(id), true);
     if (act === 'lg-new') return leagueModal();
+    if (act === 'lg-req'){ const r = S.reqs.find(x => x.id === +id); return leagueModal({name: r?.name, comm: r?.user_id, reqId: r?.id}); }
     if (act === 'lg-comm') return leagueCommModal(S.leagues.find(l => l.id === id));
     if (act === 'comp-edit') return compModal(id ? comp(id) : null);
     if (act === 'sub-new') return subModal();
