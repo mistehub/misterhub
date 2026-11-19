@@ -512,7 +512,7 @@ function render(){
   const r = (location.hash || '#home').slice(1);
   S.route = ['home','classifica','calendario','societa','mercato','svincolati','statistiche','lega','precampionato'].includes(r) ? r : 'home';
   document.querySelectorAll('#tabs a').forEach(a => { if (a.getAttribute('href') === '#' + S.route) a.setAttribute('aria-current','page'); else a.removeAttribute('aria-current'); });
-  $('#lname').textContent = S.settings?.name || 'Lega Carriera';
+  $('#lname').textContent = S.settings?.name || LNAME;
   const ri = roundInfo(), mc = myClub(), nl = notifs(), unread = nl.filter(n => n.unread).length;
   $('#meta').innerHTML = !S.settings && sb ? `<a class="tag" href="./">MisterHub</a><button class="tag" data-act="account">${S.me ? esc(S.myName || 'Account') + ' · Esci' : 'Accedi'}</button>` : S.settings ? `
     <span class="tag">Stagione ${season()}</span>
@@ -842,7 +842,7 @@ const ledger = (clubId, amount, reason) => db.collection('ledger').add({clubId, 
 const logTransfer = t => db.collection('transfers').add({ts: now(), season: season(), ...t});
 
 function settingsModal(){
-  const s = S.settings || {name:'', startBudget:50*M, startWage:800*K, maxSquad:30, yellowLimit:3, prizes:[30,20,15,10,8,6,4,2].map(x => x*M),
+  const s = S.settings || {name:LNAME, startBudget:50*M, startWage:800*K, maxSquad:30, yellowLimit:3, prizes:[30,20,15,10,8,6,4,2].map(x => x*M),
     rules:'1. Ogni partecipante gioca la carriera allenatore su FC 27 con la propria società.\n2. Si gioca andata e ritorno; vittoria 3 punti, pareggio 1.\n3. Il risultato va inserito entro 48 ore dalla partita.\n4. I nuovi giocatori arrivano solo da trattative tra partecipanti (acquisto o prestito) o dalle aste degli svincolati. Le cessioni ai club CPU vanno registrate con la cifra incassata in gioco.\n5. Il monte ingaggi non può superare il limite della società.\n6. Rosso o 3 gialli = una giornata di squalifica.\n\nCOME FUNZIONA IL MONTE INGAGGI\nIl monte ingaggi è il tetto massimo che ogni società può spendere ogni settimana in stipendi, come il budget salari della carriera su FC 27. È separato dal budget trasferimenti.\n- La somma degli ingaggi di tutti i giocatori in rosa non può superare il limite della propria società.\n- Ogni acquisto, prestito o asta vinta viene bloccato se l’ingaggio del nuovo giocatore fa sforare il limite.\n- Nei prestiti conta solo la parte di ingaggio a carico di ciascun club, secondo la percentuale concordata.\n- Nelle aste, mentre sei in testa, l’ingaggio del giocatore è già considerato nel tuo monte ingaggi.\n- Gli stipendi non vengono scalati dal budget trasferimenti: il monte ingaggi è solo un limite.\n\nCOME FUNZIONANO LE ASTE DEGLI SVINCOLATI\n- Ogni allenatore può avviare un’asta su un giocatore svincolato con un’offerta di partenza.\n- La base d’asta è il valore di mercato del giocatore: non si può offrire di meno.\n- Ogni asta dura 15 minuti, uguale per tutti.\n- Gli altri rilanciano di almeno il rilancio minimo indicato nella scheda Svincolati.\n- Come su Ultimate Team, un rilancio negli ultimi 30 secondi riporta il timer a 30 secondi.\n- Alla scadenza chi è in testa paga la sua offerta e il giocatore entra in rosa con l’ingaggio indicato.'};
   openModal(S.settings ? 'Impostazioni della lega' : 'Crea la lega', `<div class="fgrid">
     ${fld('name', 'Nome del torneo', `required maxlength="40" value="${esc(s.name)}" placeholder="Es. Lega degli Amici"`, '', true)}
