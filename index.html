@@ -324,6 +324,9 @@ function viewProfilo(){
     ${me.is_admin ? `<label class="f">Numero WhatsApp dell’assistenza (visibile a tutti)<input name="wa" type="tel" value="${esc(me.whatsapp || '')}" inputmode="tel"></label>` : ''}
     <span class="mut">Email: ${esc(S.user.email)}${me.is_admin ? ' · amministratore' : ''}</span>
     <button class="btn" type="submit">Salva</button></form>
+  <h2 class="disp">Accesso</h2>
+  <form id="mailform" class="card stack"><label class="f">Nuova email<input name="email" type="email" required autocomplete="email" placeholder="${esc(S.user.email)}"></label><button class="btn ghost" type="submit">Cambia email</button></form>
+  <form id="passform" class="card stack" style="margin-top:10px"><label class="f">Nuova password<input name="pass" type="password" required minlength="6" autocomplete="new-password"></label><button class="btn ghost" type="submit">Cambia password</button></form>
   <h2 class="disp">Iscrizioni</h2>
   <div class="list">${regs.map(r => { const c = comp(r.competition_id); return c ? `<div class="li"><span class="n"><b>${esc(c.name)}</b><br><span class="mut">${r.status === 'attesa' ? 'In lista d’attesa' : 'Iscritto'} dal ${day(r.created_at)}</span></span><button class="btn sm bad" data-act="leave" data-id="${c.id}">Esci</button></div>` : ''; }).join('') || '<div class="empty card">Nessuna iscrizione.</div>'}</div>
   <h2 class="disp">Richieste di competizione</h2>
@@ -465,6 +468,14 @@ function bindPage(r){
       await q(sb.from('requests').insert({user_id: S.user.id, base: fd.get('base'), name: String(fd.get('name')).trim(), game: fd.get('game'), teams: +fd.get('teams'), mode: fd.get('mode'), modules: fd.getAll('mod'), plan: fd.get('plan'), notes: String(fd.get('notes') || ''), whatsapp: wa}));
       toast('Richiesta inviata: ti contattiamo su WhatsApp'); location.hash = '#profilo'; await refresh();
     } catch (err){ er.textContent = errIt(err); er.hidden = false; } finally { b.disabled = false; } };
+  const mf = $('#mailform'); if (mf) mf.onsubmit = async e => { e.preventDefault(); const email = String(new FormData(mf).get('email')).trim();
+    try { if (email.toLowerCase() === (S.user.email || '').toLowerCase()) fail('È già la tua email.');
+      const r = await sb.auth.updateUser({email}); if (r.error) throw r.error;
+      if (r.data?.user?.email === email){ S.user = r.data.user; toast('Email cambiata: da ora entri con ' + email); render(); }
+      else toast('Ti abbiamo mandato una email di conferma: apri il link per completare il cambio');
+    } catch (err){ toast(errIt(err)); } };
+  const psf = $('#passform'); if (psf) psf.onsubmit = async e => { e.preventDefault(); const password = String(new FormData(psf).get('pass'));
+    try { const r = await sb.auth.updateUser({password}); if (r.error) throw r.error; psf.reset(); toast('Password cambiata'); } catch (err){ toast(errIt(err)); } };
   const pf = $('#profform'); if (pf) pf.onsubmit = async e => { e.preventDefault(); const fd = new FormData(pf);
     try { const row = {nickname: String(fd.get('nick')).trim()}; if (row.nickname.length < 2) fail('Nickname troppo corto.');
       if (fd.has('wa')) row.whatsapp = String(fd.get('wa')).trim() || null;
