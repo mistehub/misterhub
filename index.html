@@ -360,7 +360,7 @@ function viewAdmin(tab){
       return `<div class="card stack"><b class="disp" style="font-size:24px">${esc(l.name)}</b>
       <span class="sub">${location.origin}/lega.html?l=${esc(l.slug)} · ${(l.league_members || []).length} membri · commissario: ${cm.length ? cm.map(m => esc(nick(m.user_id))).join(', ') : '<b>nessuno</b>'}</span>
       <div class="row"><a class="btn sm" href="lega.html?l=${esc(l.slug)}">Apri la lega</a><button class="btn sm ghost" data-act="lg-comm" data-id="${l.id}">Nomina commissario</button>
-        ${l.competition_id ? '' : `<button class="btn sm ghost" data-act="lg-pub" data-id="${l.id}">Mostra in Tornei</button>`}
+        ${l.competition_id ? `<button class="btn sm ghost" data-act="comp-edit" data-id="${l.competition_id}">Contatto e scheda</button>` : `<button class="btn sm ghost" data-act="lg-pub" data-id="${l.id}">Mostra in Tornei</button>`}
         <select aria-label="Piano della lega" data-act="lg-plan" data-id="${l.id}" style="width:auto;padding:9px">${Object.entries(PLANS).map(([k, v]) => `<option value="${k}"${(l.settings?.plan || 'starter') === k ? ' selected' : ''}>Piano ${v.n}</option>`).join('')}</select></div></div>`; }).join('') || '';
   if (S.atab === 'competizioni') body = `<button class="btn full" data-act="comp-edit" data-id="">+ Nuova competizione</button>` + S.comps.map(c => `<div class="card stack">
       <div class="row" style="justify-content:space-between"><b class="disp" style="font-size:24px">${esc(c.name)}</b><span class="pill ${ST[c.status][1]}">${ST[c.status][0]}</span></div>
@@ -456,6 +456,7 @@ function leagueModal(pre = {}){
     <label class="f">Indirizzo<input name="slug" required maxlength="40" pattern="[a-z0-9-]{3,40}" placeholder="serie-manager-italia" value="${esc(slugify(pre.name || ''))}"><span class="mut">Il link sarà ${location.origin}/lega.html?l=<b id="slp">${esc(slugify(pre.name || '')) || '…'}</b></span></label>
     <label class="f">Piano<select name="plan">${Object.entries(PLANS).map(([k, v]) => `<option value="${k}"${(pre.plan || 'starter') === k ? ' selected' : ''}>${v.n}</option>`).join('')}</select></label>
     <label class="f">Commissario (il cliente)<select name="comm"><option value="">Lo scelgo dopo</option>${userOpts()}</select></label>
+    <label class="f">WhatsApp del creatore (per la scheda pubblica)<input name="wa" inputmode="tel" maxlength="20" placeholder="+39 333 1234567"></label>
     <label class="f" style="flex-direction:row;gap:8px;align-items:center"><input type="checkbox" name="pub" checked style="width:auto"> Mostrala in «Tornei e leghe»</label>
     <p class="mut">La lega nasce vuota: il commissario entra, imposta la lega, carica i giocatori e invia il link di invito ai suoi manager.</p>`,
     async fd => { const name = String(fd.get('name')).trim(), slug = slugify(fd.get('slug'));
@@ -463,7 +464,7 @@ function leagueModal(pre = {}){
       if (S.leagues.some(l => l.slug === slug)) fail('Esiste già una lega con questo indirizzo.');
       const [lg] = await q(sb.from('leagues').insert({name, slug, settings: {plan: fd.get('plan') || 'starter'}}).select('id'));
       if (fd.get('comm')) await q(sb.from('league_members').insert({league_id: lg.id, user_id: fd.get('comm'), role: 'commissario'}));
-      if (fd.get('pub') === 'on') await pubLeague({id: lg.id, name, slug}, fd.get('comm'));
+      if (fd.get('pub') === 'on') await pubLeague({id: lg.id, name, slug}, fd.get('comm'), String(fd.get('wa') || '').trim());
       if (pre.reqId) await q(sb.from('requests').update({status: 'attiva'}).eq('id', pre.reqId));
       toast('Lega creata'); }, 'Crea lega');
   if (pre.comm) f.elements.comm.value = pre.comm;
@@ -471,9 +472,9 @@ function leagueModal(pre = {}){
   nm.oninput = () => { if (!touched){ sl.value = slugify(nm.value); pv.textContent = sl.value || '…'; } };
   sl.oninput = () => { touched = true; pv.textContent = slugify(sl.value) || '…'; };
 }
-async function pubLeague(l, commId){
+async function pubLeague(l, commId, wa){
   const org = commId ? (S.profiles.find(p => p.id === commId)?.nickname || null) : null;
-  const [c] = await q(sb.from('competitions').insert({name: l.name, organizer: org, max_teams: 20, status: 'iscrizioni', site_url: location.origin + '/lega.html?l=' + l.slug}).select('id'));
+  const [c] = await q(sb.from('competitions').insert({name: l.name, organizer: org, whatsapp: wa || null, max_teams: 20, status: 'iscrizioni', site_url: location.origin + '/lega.html?l=' + l.slug}).select('id'));
   await q(sb.from('leagues').update({competition_id: c.id}).eq('id', l.id));
 }
 function leagueCommModal(l){
