@@ -113,7 +113,7 @@ dialog h3{margin:0;font-size:26px}
 const SB_URL = 'https://fgjekmjlmzwdcphqpeul.supabase.co';
 const SB_KEY = 'sb_publishable_U7-K-4NqzVgOEJyD4EsaRQ_FOGY8QI2';
 const sb = window.supabase.createClient(SB_URL, SB_KEY);
-const S = {user: null, me: null, comps: [], regs: [], names: {}, sponsors: [], reqs: [], subs: [], admins: [], profiles: [], filter: 'tutti', atab: 'richieste', authMode: 'login', ready: false};
+const S = {user: null, me: null, comps: [], regs: [], names: {}, sponsors: [], reqs: [], subs: [], admins: [], profiles: [], leagues: [], myLeagues: [], filter: 'tutti', atab: 'richieste', authMode: 'login', ready: false};
 const $ = s => document.querySelector(s);
 const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
 const fail = m => { throw new Error(m); };
@@ -168,6 +168,8 @@ async function loadAll(){
     S.reqs = await q(sb.from('requests').select('*').order('created_at', {ascending: false}));
     S.subs = await q(sb.from('subscriptions').select('*').order('ends_on', {ascending: false}));
     S.profiles = S.me?.is_admin ? await q(sb.from('profiles').select('id,nickname,created_at').order('created_at')) : [];
+    S.myLeagues = await q(sb.from('league_members').select('role,leagues(id,name,slug)').eq('user_id', S.user.id));
+    S.leagues = S.me?.is_admin ? await q(sb.from('leagues').select('id,name,slug,created_at,league_members(user_id,role)').order('created_at', {ascending: false})) : [];
   }
   S.ready = true;
 }
@@ -175,7 +177,9 @@ async function refresh(){ S.allSponsors = null; try { await loadAll(); } catch (
 
 /* ---------- utilità competizioni ---------- */
 const regsOf = id => S.regs.filter(r => r.competition_id === id);
+const extOf = id => (comp(id)?.external_members || []).filter(x => String(x).trim());
 const inOf = id => regsOf(id).filter(r => r.status === 'iscritto');
+const nIn = id => inOf(id).length + extOf(id).length;
 const waitOf = id => regsOf(id).filter(r => r.status === 'attesa');
 const myReg = id => S.user && S.regs.find(r => r.competition_id === id && r.user_id === S.user.id);
 const comp = id => S.comps.find(c => c.id === +id);
@@ -234,6 +238,7 @@ function viewHome(){
     ${card('#assistenza', IC.chat, 'Assistenza e contatti', 'Scrivici su WhatsApp per qualsiasi informazione')}
     ${card('#profilo', IC.user, 'Il mio profilo', 'Iscrizioni, richieste e abbonamento')}
   </div>
+  ${S.myLeagues.filter(m => m.leagues).length ? `<h2 class="disp">Le tue leghe</h2><div class="list">${S.myLeagues.filter(m => m.leagues).map(m => `<a class="li" href="lega.html?l=${esc(m.leagues.slug)}"><span class="n"><b>${esc(m.leagues.name)}</b><br><span class="mut">${m.role === 'commissario' ? 'Sei il commissario' : 'Sei un manager'}</span></span><span class="btn sm">Apri</span></a>`).join('')}</div>` : ''}
   ${mine.length ? `<h2 class="disp">Le tue competizioni</h2><div class="list">${mine.map(({r, c}) => `<div class="li"><span class="n"><b>${esc(c.name)}</b><br><span class="mut">${r.status === 'attesa' ? `In lista d’attesa · posizione ${waitOf(c.id).findIndex(x => x.user_id === r.user_id) + 1}` : 'Iscritto'}</span></span>${safeUrl(c.site_url) ? `<a class="btn sm" href="${esc(c.site_url)}" target="_blank" rel="noopener">Apri</a>` : `<a class="btn sm ghost" href="#tornei/tutti">Dettagli</a>`}</div>`).join('')}</div>` : ''}`;
 }
 function viewTornei(f){
@@ -256,8 +261,8 @@ function tcard(c){
   else main = wa ? `<a class="btn full" href="${wa}?text=${msg}" target="_blank" rel="noopener">Vuoi entrare? Contatta ${c.organizer ? esc(c.organizer) : 'il creatore'}</a>` : '<button class="btn full ghost" disabled>Contatto del creatore non disponibile</button>';
   return `<article class="tcard"><div class="th"><b>${esc(c.name)}</b><span class="pill ${stc}">${stl}</span></div>
     <div class="tb"><div class="row"><span class="tag">${esc(c.game)}</span><span class="tag">${esc(c.mode)}</span><span class="tag">${esc(c.platforms)}</span></div>
-      <span class="sub">${ins.length} su ${c.max_teams} iscritti${c.organizer ? ` · creato da <b>${esc(c.organizer)}</b>` : ''}</span>
-      <div><b style="font-size:13px">Iscritti</b><div class="row" style="margin-top:6px;gap:6px">${chips(ins) || '<span class="mut">Ancora nessuno.</span>'}</div></div>
+      <span class="sub">${nIn(c.id)} su ${c.max_teams} iscritti${c.organizer ? ` · creato da <b>${esc(c.organizer)}</b>` : ''}</span>
+      <div><b style="font-size:13px">Iscritti</b><div class="row" style="margin-top:6px;gap:6px">${extOf(c.id).map((x, i) => `<span class="tag" style="color:var(--txt)">${i + 1}. ${esc(x)}</span>`).join('')}${ins.map((r, i) => `<span class="tag" style="color:var(--txt)">${extOf(c.id).length + i + 1}. ${esc(nick(r.user_id))}</span>`).join('') || (extOf(c.id).length ? '' : '<span class="mut">Ancora nessuno.</span>')}</div></div>
       ${wl.length ? `<div><b style="font-size:13px">Lista d’attesa</b><div class="row" style="margin-top:6px;gap:6px">${chips(wl)}</div></div>` : ''}
       ${main}
       ${site ? `<a class="btn ghost sm" href="${esc(site)}" target="_blank" rel="noopener">Apri il sito della lega</a>` : ''}
@@ -336,7 +341,7 @@ function viewProfilo(){
 /* ---------- admin ---------- */
 function viewAdmin(tab){
   if (!isAdmin()) return '<div class="empty card">Area riservata agli amministratori.</div>';
-  S.atab = ['richieste', 'competizioni', 'abbonamenti', 'sponsor'].includes(tab) ? tab : 'richieste';
+  S.atab = ['richieste', 'leghe', 'competizioni', 'abbonamenti', 'sponsor'].includes(tab) ? tab : 'richieste';
   const t = (k, l) => `<a href="#admin/${k}" class="${S.atab === k ? 'on' : ''}">${l}</a>`;
   const nNew = S.reqs.filter(r => r.status === 'nuova').length;
   let body = '';
@@ -347,14 +352,18 @@ function viewAdmin(tab){
       ${r.notes ? `<div class="notice">${esc(r.notes)}</div>` : ''}
       <div class="row">${waLink(r.whatsapp) ? `<a class="btn sm" href="${waLink(r.whatsapp)}" target="_blank" rel="noopener">WhatsApp ${esc(r.whatsapp)}</a>` : ''}
         <select aria-label="Stato richiesta" data-act="req-status" data-id="${r.id}" style="width:auto;padding:9px">${Object.entries(REQ_ST).map(([k, v]) => `<option value="${k}"${k === r.status ? ' selected' : ''}>${v}</option>`).join('')}</select></div></div>`).join('') || '<div class="empty card">Nessuna richiesta per ora.</div>';
+  if (S.atab === 'leghe') body = `<button class="btn full" data-act="lg-new">+ Crea una lega</button>` + S.leagues.map(l => { const cm = (l.league_members || []).filter(m => m.role === 'commissario');
+      return `<div class="card stack"><b class="disp" style="font-size:24px">${esc(l.name)}</b>
+      <span class="sub">${location.origin}/lega.html?l=${esc(l.slug)} · ${(l.league_members || []).length} membri · commissario: ${cm.length ? cm.map(m => esc(nick(m.user_id))).join(', ') : '<b>nessuno</b>'}</span>
+      <div class="row"><a class="btn sm" href="lega.html?l=${esc(l.slug)}">Apri la lega</a><button class="btn sm ghost" data-act="lg-comm" data-id="${l.id}">Nomina commissario</button></div></div>`; }).join('') || '';
   if (S.atab === 'competizioni') body = `<button class="btn full" data-act="comp-edit" data-id="">+ Nuova competizione</button>` + S.comps.map(c => `<div class="card stack">
       <div class="row" style="justify-content:space-between"><b class="disp" style="font-size:24px">${esc(c.name)}</b><span class="pill ${ST[c.status][1]}">${ST[c.status][0]}</span></div>
-      <span class="sub">${inOf(c.id).length}/${c.max_teams} iscritti · ${waitOf(c.id).length} in attesa</span>
+      <span class="sub">${nIn(c.id)}/${c.max_teams} iscritti · ${waitOf(c.id).length} in attesa</span>
       <div class="row"><button class="btn sm" data-act="comp-edit" data-id="${c.id}">Modifica</button><button class="btn sm ghost" data-act="comp-people" data-id="${c.id}">Iscritti e lista d’attesa</button></div></div>`).join('');
   if (S.atab === 'abbonamenti') body = `<button class="btn full" data-act="sub-new">+ Attiva abbonamento</button>` + S.subs.map(s => `<div class="li"><span class="n"><b>${esc(nick(s.user_id))}</b> · ${esc(PLANS[s.plan]?.n)}<br><span class="mut">dal ${day(s.starts_on)} al ${day(s.ends_on)}${s.note ? ' · ' + esc(s.note) : ''}</span></span>${new Date(s.ends_on) >= new Date(new Date().toDateString()) ? '<span class="pill p-open">ATTIVO</span>' : '<span class="pill p-end">SCADUTO</span>'}</div>`).join('');
   if (S.atab === 'sponsor') body = `<button class="btn full" data-act="sp-edit" data-id="">+ Nuovo sponsor</button>` + S.allSponsors.map(s => `<div class="li"><span class="n"><b>${esc(s.name)}</b><br><span class="mut">${esc(s.contact || '')}${s.active ? '' : ' · nascosto'}</span></span><button class="btn sm ghost" data-act="sp-edit" data-id="${s.id}">Modifica</button></div>`).join('');
   return `<h1 class="disp">Pannello admin</h1>
-  <div class="tabs">${t('richieste', 'Richieste' + (nNew ? ` (${nNew})` : ''))}${t('competizioni', 'Competizioni')}${t('abbonamenti', 'Abbonamenti')}${t('sponsor', 'Sponsor')}</div>
+  <div class="tabs">${t('richieste', 'Richieste' + (nNew ? ` (${nNew})` : ''))}${t('leghe', 'Leghe')}${t('competizioni', 'Competizioni')}${t('abbonamenti', 'Abbonamenti')}${t('sponsor', 'Sponsor')}</div>
   <div class="stack">${body}</div>`;
 }
 
@@ -380,7 +389,7 @@ function peopleModal(c, admin){
   const row = (r, i) => `<div class="li"><span class="n">${i + 1}. <b>${esc(nick(r.user_id))}</b>${r.team_wish ? `<br><span class="mut">${esc(r.team_wish)}</span>` : ''}</span>${admin ? `<span class="row">${r.status === 'attesa' ? `<button type="button" class="btn sm" data-reg="promote" data-u="${r.user_id}">Fai entrare</button>` : `<button type="button" class="btn sm ghost" data-reg="wait" data-u="${r.user_id}">In attesa</button>`}<button type="button" class="btn sm bad" data-reg="del" data-u="${r.user_id}" aria-label="Rimuovi">✕</button></span>` : ''}</div>`;
   const a = inOf(c.id), w = waitOf(c.id);
   const free = S.profiles.filter(p => !regsOf(c.id).some(r => r.user_id === p.id));
-  modal(`Iscritti · ${esc(c.name)}`, `<b>Iscritti (${a.length}/${c.max_teams})</b><div class="list">${a.map(row).join('') || '<span class="mut">Nessuno.</span>'}</div>
+  modal(`Iscritti · ${esc(c.name)}`, `<b>Iscritti (${nIn(c.id)}/${c.max_teams})</b><div class="list">${extOf(c.id).map(x => `<div class="li"><span class="n">${esc(x)}</span><span class="mut">fuori da MisterHub</span></div>`).join('')}${a.map(row).join('') || (extOf(c.id).length ? '' : '<span class="mut">Nessuno.</span>')}</div>
     <b>Lista d’attesa (${w.length})</b><div class="list">${w.map(row).join('') || '<span class="mut">Nessuno.</span>'}</div>
     ${admin ? `<div class="card stack" style="background:var(--bg)"><b>Aggiungi un manager</b>
       <label class="f">Utente registrato<select name="addu"><option value="">Scegli…</option>${free.map(p => `<option value="${p.id}">${esc(p.nickname)}</option>`).join('')}</select></label>
@@ -413,11 +422,12 @@ function compModal(c){
     <label class="f">Organizzatore<input name="org" value="${esc(v.organizer || '')}"></label>
     <label class="f">WhatsApp organizzatore<input name="wa" type="tel" value="${esc(v.whatsapp || '')}"></label>
     <label class="f">Sito della lega (https://…)<input name="site" type="url" value="${esc(v.site_url || '')}"></label>
-    <label class="f">Regolamento<textarea name="rules" rows="6">${esc(v.rules)}</textarea></label>
+    <label class="f">Iscritti fuori da MisterHub (uno per riga, es. "CICCIO ALLEGRI · Milan")<textarea name="ext" rows="6">${esc((v.external_members || []).join('\n'))}</textarea></label>
+    <label class="f">Regolamento<textarea name="rules" rows="4">${esc(v.rules)}</textarea></label>
     <label class="f">Ordine nell’elenco<input name="sort" type="number" value="${v.sort}"></label>
     ${c ? '<button type="button" class="btn bad sm" id="cdel">Elimina competizione</button>' : ''}`,
     async fd => { const row = {name: String(fd.get('name')).trim(), game: String(fd.get('game')).trim(), max_teams: +fd.get('max'), platforms: String(fd.get('plat')).trim(), mode: String(fd.get('mode')).trim(),
-        status: String(fd.get('status')), organizer: String(fd.get('org')).trim() || null, whatsapp: String(fd.get('wa')).trim() || null, site_url: safeUrl(String(fd.get('site')).trim()) || null, rules: String(fd.get('rules')), sort: +fd.get('sort') || 0};
+        status: String(fd.get('status')), organizer: String(fd.get('org')).trim() || null, whatsapp: String(fd.get('wa')).trim() || null, site_url: safeUrl(String(fd.get('site')).trim()) || null, rules: String(fd.get('rules')), sort: +fd.get('sort') || 0, external_members: String(fd.get('ext') || '').split('\n').map(x => x.trim()).filter(Boolean)};
       if (!row.name) fail('Scrivi il nome.');
       if (c) await q(sb.from('competitions').update(row).eq('id', c.id)); else await q(sb.from('competitions').insert(row));
       toast('Competizione salvata'); });
@@ -432,6 +442,27 @@ function subModal(){
     <label class="f">Nota (es. pagato con PayPal)<input name="note" maxlength="200"></label>`,
     async fd => { if (!fd.get('user')) fail('Scegli l’organizzatore.');
       await q(sb.from('subscriptions').insert({user_id: fd.get('user'), plan: fd.get('plan'), starts_on: fd.get('from'), ends_on: fd.get('to'), note: String(fd.get('note') || '')})); toast('Abbonamento attivato'); }, 'Attiva');
+}
+const slugify = v => String(v || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
+const userOpts = () => S.profiles.map(p => `<option value="${p.id}">${esc(p.nickname)}</option>`).join('');
+function leagueModal(){
+  const f = modal('Crea una lega', `<label class="f">Nome della lega<input name="name" required maxlength="60" placeholder="Es. Serie Manager Italia"></label>
+    <label class="f">Indirizzo<input name="slug" required maxlength="40" pattern="[a-z0-9-]{3,40}" placeholder="serie-manager-italia"><span class="mut">Il link sarà ${location.origin}/lega.html?l=<b id="slp">…</b></span></label>
+    <label class="f">Commissario (il cliente)<select name="comm"><option value="">Lo scelgo dopo</option>${userOpts()}</select></label>
+    <p class="mut">La lega nasce vuota: il commissario entra, imposta la lega, carica i giocatori e invia il link di invito ai suoi manager.</p>`,
+    async fd => { const name = String(fd.get('name')).trim(), slug = slugify(fd.get('slug'));
+      if (slug.length < 3) fail('L’indirizzo deve avere almeno 3 lettere o numeri.');
+      if (S.leagues.some(l => l.slug === slug)) fail('Esiste già una lega con questo indirizzo.');
+      const [lg] = await q(sb.from('leagues').insert({name, slug}).select('id'));
+      if (fd.get('comm')) await q(sb.from('league_members').insert({league_id: lg.id, user_id: fd.get('comm'), role: 'commissario'}));
+      toast('Lega creata'); }, 'Crea lega');
+  const nm = f.elements.name, sl = f.elements.slug, pv = f.querySelector('#slp'); let touched = false;
+  nm.oninput = () => { if (!touched){ sl.value = slugify(nm.value); pv.textContent = sl.value || '…'; } };
+  sl.oninput = () => { touched = true; pv.textContent = slugify(sl.value) || '…'; };
+}
+function leagueCommModal(l){
+  modal('Nomina commissario · ' + esc(l.name), `<label class="f">Utente<select name="u" required>${userOpts()}</select></label><p class="mut">Se è già nella lega diventa commissario, altrimenti viene aggiunto. Una lega può avere più commissari.</p>`,
+    async fd => { await q(sb.from('league_members').upsert({league_id: l.id, user_id: fd.get('u'), role: 'commissario'})); toast('Commissario nominato'); });
 }
 function spModal(s){
   const v = s || {name: '', link: '', contact: '', sort: 0, active: true};
@@ -501,6 +532,8 @@ document.addEventListener('click', async e => {
     if (act === 'rules') return rulesModal(comp(id));
     if (act === 'people') return peopleModal(comp(id), false);
     if (act === 'comp-people') return peopleModal(comp(id), true);
+    if (act === 'lg-new') return leagueModal();
+    if (act === 'lg-comm') return leagueCommModal(S.leagues.find(l => l.id === id));
     if (act === 'comp-edit') return compModal(id ? comp(id) : null);
     if (act === 'sub-new') return subModal();
     if (act === 'sp-edit') return spModal(id ? S.allSponsors.find(s => s.id === +id) : null);
