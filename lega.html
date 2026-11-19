@@ -860,7 +860,7 @@ function settingsModal(){
     ${fld('auctionStep', 'Rilancio minimo alle aste (milioni €)', `type="number" min="0" step="0.1" value="${(s.auctionStep ?? 0.5 * M) / M}"`)}
     ${fld('prizesB', 'Premi piazzamento Serie B (milioni €, dal 1° in giù)', `value="${esc(prizesB().map(p => p / M).join('; '))}"`, 'Separati da punto e virgola. Vengono accreditati alla chiusura della stagione.', true)}
     ${fld('prizes', 'Premi piazzamento Serie A (milioni €, dal 1° in giù)', `value="${esc((s.prizes || []).map(p => p / M).join(', '))}"`, 'Separati da virgola. Vengono accreditati alla chiusura della stagione.', true)}
-    <div class="f full"><label for="rules">Regolamento</label><textarea id="rules" name="rules" maxlength="8000">${esc(s.rules)}</textarea></div></div>`,
+    <div class="f full"><label for="rules">Regolamento</label><textarea id="rules" name="rules" maxlength="8000"${S.settings && LPLAN() === 'starter' ? ' readonly' : ''}>${esc(s.rules)}</textarea>${S.settings && LPLAN() === 'starter' ? '<span class="hint">Con il piano Starter il regolamento resta quello del modello. Con Pro o Élite puoi personalizzarlo.</span>' : ''}</div></div>`,
     async fd => {
       const name = String(fd.get('name')).trim() || fail('Dai un nome al torneo.');
       const data = {name, startBudget: num(fd, 'startBudget') * M, startWage: num(fd, 'startWage') * K, maxSquad: Math.round(num(fd, 'maxSquad')) || 30,
@@ -2255,7 +2255,7 @@ function invitePanel(){
 }
 function usersPanel(){
   if (!S.comm) return '';
-  return startPanel() + invitePanel() + usersPanel0();
+  return planPanel() + startPanel() + invitePanel() + usersPanel0();
 }
 function usersPanel0(){
   if (!usersCache){ setTimeout(() => loadUsers(), 0); return `<div class="panel"><div class="ph"><h3>Manager registrati</h3></div><p class="muted">Caricamento…</p></div>`; }
@@ -2757,8 +2757,60 @@ async function stFile(){
         async () => {}, 'Ok'), 300);
     }, 'Carica rose');
 }
+/* ---------- piano e aspetto della lega ---------- */
+let LSET = {};
+const LPLAN = () => ['starter', 'pro', 'elite'].includes(LSET.plan) ? LSET.plan : 'starter';
+const PLAN_N = {starter: 'Starter', pro: 'Pro', elite: 'Élite'};
+const hexOr = (v, d) => /^#[0-9a-f]{6}$/i.test(v || '') ? v : d;
+function applyBrand(){
+  const b = LPLAN() === 'elite' ? (LSET.brand || {}) : {};
+  const r = document.documentElement.style;
+  if (b.color){ r.setProperty('--pitch', b.color); r.setProperty('--pitch-2', hexOr(b.color2, b.color)); } else { r.removeProperty('--pitch'); r.removeProperty('--pitch-2'); }
+  if (b.accent){ r.setProperty('--accent', b.accent); } else r.removeProperty('--accent');
+  const eb = document.querySelector('header.band .eyebrow'); if (eb) eb.textContent = b.tagline || 'Lega carriera allenatore · FC 27';
+  const h = document.querySelector('#lname'); let lg = document.querySelector('#llogo');
+  if (b.logo && /^data:image\/|^https:\/\//.test(b.logo)){
+    if (!lg && h){ lg = document.createElement('img'); lg.id = 'llogo'; lg.alt = ''; lg.style.cssText = 'height:56px;width:56px;object-fit:contain;border-radius:12px;vertical-align:middle;margin-right:12px;float:left'; h.parentNode.insertBefore(lg, h.parentNode.firstChild); }
+    lg.src = b.logo;
+  } else if (lg) lg.remove();
+}
+function planPanel(){
+  if (!S.comm) return '';
+  const p = LPLAN();
+  const what = {starter: 'Il sito così com’è, con il regolamento del modello.', pro: 'Puoi personalizzare il regolamento della lega.', elite: 'Regolamento, logo, colori e sottotitolo personalizzati.'}[p];
+  return `<div class="panel"><div class="ph"><h3>Piano ${PLAN_N[p]}</h3>${p === 'elite' ? '<button class="btn sm primary" data-act="brand-edit">Aspetto della lega</button>' : ''}</div>
+    <p class="sub">${what}${p !== 'elite' ? ' Per avere di più contatta MisterHub e passa al piano superiore.' : ''}</p></div>`;
+}
+function logoToData(file){
+  return new Promise((ok, ko) => { const img = new Image(), u = URL.createObjectURL(file);
+    img.onload = () => { const s = 256, k = Math.min(1, s / Math.max(img.width, img.height)), c = document.createElement('canvas');
+      c.width = Math.round(img.width * k); c.height = Math.round(img.height * k); c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(u); ok(c.toDataURL('image/png')); };
+    img.onerror = () => ko(new Error('Immagine non valida.')); img.src = u; });
+}
+function brandModal(){
+  if (LPLAN() !== 'elite') return toast('Disponibile con il piano Élite.');
+  const b = LSET.brand || {}; let logo = b.logo || null;
+  const f = openModal('Aspetto della lega', `<div class="fgrid">
+    ${fld('btag', 'Sottotitolo in alto', `maxlength="60" value="${esc(b.tagline || '')}" placeholder="Lega carriera allenatore · FC 27"`, '', true)}
+    <div class="f"><label for="bcol">Colore della testata</label><input type="color" id="bcol" name="bcol" value="${hexOr(b.color, '#123a2a')}"></div>
+    <div class="f"><label for="bcol2">Secondo colore (righe)</label><input type="color" id="bcol2" name="bcol2" value="${hexOr(b.color2, hexOr(b.color, '#174a35'))}"></div>
+    <div class="f"><label for="bacc">Colore dei pulsanti</label><input type="color" id="bacc" name="bacc" value="${hexOr(b.accent, '#1c4fd6')}"></div>
+    <div class="f full"><label for="blogo">Logo della lega</label><input type="file" id="blogo" accept="image/*"><span class="hint" id="blh">${logo ? 'Logo caricato. Scegline un altro per cambiarlo.' : 'PNG o JPG, viene ridimensionato in automatico.'}</span>
+    ${logo ? '<label><input type="checkbox" name="bnologo"> Togli il logo</label>' : ''}</div>
+    <div class="f full"><label><input type="checkbox" name="breset"> Torna ai colori standard</label></div></div>`,
+    async fd => {
+      const fl = f.querySelector('#blogo').files[0]; if (fl) logo = await logoToData(fl);
+      if (fd.get('bnologo') === 'on') logo = null;
+      const brand = fd.get('breset') === 'on' ? {tagline: String(fd.get('btag') || '').trim(), logo} :
+        {tagline: String(fd.get('btag') || '').trim(), color: fd.get('bcol'), color2: fd.get('bcol2'), accent: fd.get('bacc'), logo};
+      const settings = {...LSET, brand};
+      const {error} = await sb.from('leagues').update({settings}).eq('id', LID); if (error) throw dbErr(error);
+      LSET = settings; applyBrand(); toast('Aspetto salvato');
+    }, 'Salva');
+}
 /* ---------- permessi ---------- */
-const COMM_ONLY = new Set(['st-real','st-build','st-file','inv-new','fx-add','fx-edit','fx-del','fx-clear','fa-file','draw-skip','draw-new','draw-next','draw-all','draw-end','start-budgets','live','assign','recalc','reset-league','settings','club-new','club-edit','club-leave','club-del','result','add-player','import','edit-player','auc-cancel','auc-time','fa-add','fa-import','fa-del','obj-add','obj-done','obj-fail','obj-del','adjust','window','gen','close-season']);
+const COMM_ONLY = new Set(['brand-edit','st-real','st-build','st-file','inv-new','fx-add','fx-edit','fx-del','fx-clear','fa-file','draw-skip','draw-new','draw-next','draw-all','draw-end','start-budgets','live','assign','recalc','reset-league','settings','club-new','club-edit','club-leave','club-del','result','add-player','import','edit-player','auc-cancel','auc-time','fa-add','fa-import','fa-del','obj-add','obj-done','obj-fail','obj-del','adjust','window','gen','close-season']);
 const MKT_ACTS = new Set(['sell','offer','redeem','auc-start','bid','cpu-buy','offer-accept','offer-counter']);
 /* ---------- events ---------- */
 document.addEventListener('click', async e => {
@@ -2781,6 +2833,7 @@ document.addEventListener('click', async e => {
       case 'st-real': stReal().catch(e => toast(e.message, 5000)); break;
       case 'st-build': stBuild(); break;
       case 'st-file': stFile(); break;
+      case 'brand-edit': brandModal(); break;
       case 'inv-copy': try { await navigator.clipboard.writeText(inviteLink()); toast('Link copiato'); } catch { toast('Tieni premuto sul link per copiarlo'); } break;
       case 'inv-new': confirmBox('Nuovo link di invito', 'Il link vecchio smette di funzionare. Continuare?', 'Crea nuovo', async () => { await loadInvite(true); toast('Nuovo link pronto'); }); break;
       case 'reset-league': resetLeagueModal(); break;
@@ -2879,9 +2932,9 @@ async function boot(){
   const noLeague = msg => { S.gate = true; const nav = document.querySelector('#tabs'); if (nav) nav.hidden = true;
     $('#meta').innerHTML = '<a class="tag" href="./">MisterHub</a>'; $('#main').innerHTML = panelEmpty('Lega non trovata', msg); };
   if (!SLUG) return noLeague('Apri la lega dal link che ti ha dato il commissario, oppure da MisterHub.');
-  const {data: lg} = await sb.from('leagues').select('id,name').eq('slug', SLUG).maybeSingle();
+  const {data: lg} = await sb.from('leagues').select('id,name,settings').eq('slug', SLUG).maybeSingle();
   if (!lg) return noLeague('Questo indirizzo non corrisponde a nessuna lega. Controlla il link.');
-  LID = lg.id; LNAME = lg.name; document.title = LNAME + ' · MisterHub';
+  LID = lg.id; LNAME = lg.name; LSET = lg.settings || {}; applyBrand(); document.title = LNAME + ' · MisterHub';
   const ln = document.querySelector('#lname'); if (ln) ln.textContent = LNAME;
   sb.auth.onAuthStateChange(ev => { if (ev === 'PASSWORD_RECOVERY') setTimeout(newPasswordModal, 300); });
   try { await loadSession(); } catch {}

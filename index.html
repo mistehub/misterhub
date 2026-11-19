@@ -169,7 +169,7 @@ async function loadAll(){
     S.subs = await q(sb.from('subscriptions').select('*').order('ends_on', {ascending: false}));
     S.profiles = S.me?.is_admin ? await q(sb.from('profiles').select('id,nickname,created_at').order('created_at')) : [];
     S.myLeagues = await q(sb.from('league_members').select('role,leagues(id,name,slug)').eq('user_id', S.user.id));
-    S.leagues = S.me?.is_admin ? await q(sb.from('leagues').select('id,name,slug,created_at,league_members(user_id,role)').order('created_at', {ascending: false})) : [];
+    S.leagues = S.me?.is_admin ? await q(sb.from('leagues').select('id,name,slug,settings,created_at,league_members(user_id,role)').order('created_at', {ascending: false})) : [];
   }
   S.ready = true;
 }
@@ -356,7 +356,8 @@ function viewAdmin(tab){
   if (S.atab === 'leghe') body = `<button class="btn full" data-act="lg-new">+ Crea una lega</button>` + S.leagues.map(l => { const cm = (l.league_members || []).filter(m => m.role === 'commissario');
       return `<div class="card stack"><b class="disp" style="font-size:24px">${esc(l.name)}</b>
       <span class="sub">${location.origin}/lega.html?l=${esc(l.slug)} · ${(l.league_members || []).length} membri · commissario: ${cm.length ? cm.map(m => esc(nick(m.user_id))).join(', ') : '<b>nessuno</b>'}</span>
-      <div class="row"><a class="btn sm" href="lega.html?l=${esc(l.slug)}">Apri la lega</a><button class="btn sm ghost" data-act="lg-comm" data-id="${l.id}">Nomina commissario</button></div></div>`; }).join('') || '';
+      <div class="row"><a class="btn sm" href="lega.html?l=${esc(l.slug)}">Apri la lega</a><button class="btn sm ghost" data-act="lg-comm" data-id="${l.id}">Nomina commissario</button>
+        <select aria-label="Piano della lega" data-act="lg-plan" data-id="${l.id}" style="width:auto;padding:9px">${Object.entries(PLANS).map(([k, v]) => `<option value="${k}"${(l.settings?.plan || 'starter') === k ? ' selected' : ''}>Piano ${v.n}</option>`).join('')}</select></div></div>`; }).join('') || '';
   if (S.atab === 'competizioni') body = `<button class="btn full" data-act="comp-edit" data-id="">+ Nuova competizione</button>` + S.comps.map(c => `<div class="card stack">
       <div class="row" style="justify-content:space-between"><b class="disp" style="font-size:24px">${esc(c.name)}</b><span class="pill ${ST[c.status][1]}">${ST[c.status][0]}</span></div>
       <span class="sub">${nIn(c.id)}/${c.max_teams} iscritti · ${waitOf(c.id).length} in attesa</span>
@@ -449,12 +450,13 @@ const userOpts = () => S.profiles.map(p => `<option value="${p.id}">${esc(p.nick
 function leagueModal(pre = {}){
   const f = modal('Crea una lega', `<label class="f">Nome della lega<input name="name" required maxlength="60" placeholder="Es. Serie Manager Italia" value="${esc(pre.name || '')}"></label>
     <label class="f">Indirizzo<input name="slug" required maxlength="40" pattern="[a-z0-9-]{3,40}" placeholder="serie-manager-italia" value="${esc(slugify(pre.name || ''))}"><span class="mut">Il link sarà ${location.origin}/lega.html?l=<b id="slp">${esc(slugify(pre.name || '')) || '…'}</b></span></label>
+    <label class="f">Piano<select name="plan">${Object.entries(PLANS).map(([k, v]) => `<option value="${k}"${(pre.plan || 'starter') === k ? ' selected' : ''}>${v.n}</option>`).join('')}</select></label>
     <label class="f">Commissario (il cliente)<select name="comm"><option value="">Lo scelgo dopo</option>${userOpts()}</select></label>
     <p class="mut">La lega nasce vuota: il commissario entra, imposta la lega, carica i giocatori e invia il link di invito ai suoi manager.</p>`,
     async fd => { const name = String(fd.get('name')).trim(), slug = slugify(fd.get('slug'));
       if (slug.length < 3) fail('L’indirizzo deve avere almeno 3 lettere o numeri.');
       if (S.leagues.some(l => l.slug === slug)) fail('Esiste già una lega con questo indirizzo.');
-      const [lg] = await q(sb.from('leagues').insert({name, slug}).select('id'));
+      const [lg] = await q(sb.from('leagues').insert({name, slug, settings: {plan: fd.get('plan') || 'starter'}}).select('id'));
       if (fd.get('comm')) await q(sb.from('league_members').insert({league_id: lg.id, user_id: fd.get('comm'), role: 'commissario'}));
       if (pre.reqId) await q(sb.from('requests').update({status: 'attiva'}).eq('id', pre.reqId));
       toast('Lega creata'); }, 'Crea lega');
@@ -536,7 +538,7 @@ document.addEventListener('click', async e => {
     if (act === 'people') return peopleModal(comp(id), false);
     if (act === 'comp-people') return peopleModal(comp(id), true);
     if (act === 'lg-new') return leagueModal();
-    if (act === 'lg-req'){ const r = S.reqs.find(x => x.id === +id); return leagueModal({name: r?.name, comm: r?.user_id, reqId: r?.id}); }
+    if (act === 'lg-req'){ const r = S.reqs.find(x => x.id === +id); return leagueModal({name: r?.name, comm: r?.user_id, reqId: r?.id, plan: r?.plan}); }
     if (act === 'lg-comm') return leagueCommModal(S.leagues.find(l => l.id === id));
     if (act === 'comp-edit') return compModal(id ? comp(id) : null);
     if (act === 'sub-new') return subModal();
@@ -544,6 +546,9 @@ document.addEventListener('click', async e => {
   } catch (err){ toast(errIt(err)); }
 });
 document.addEventListener('change', async e => {
+  const pl = e.target.closest('select[data-act="lg-plan"]');
+  if (pl){ const l = S.leagues.find(x => x.id === pl.dataset.id);
+    try { await q(sb.from('leagues').update({settings: {...(l?.settings || {}), plan: pl.value}}).eq('id', pl.dataset.id)); toast('Piano aggiornato'); await refresh(); } catch (err){ toast(errIt(err)); } return; }
   const el = e.target.closest('select[data-act="req-status"]'); if (!el) return;
   try { await q(sb.from('requests').update({status: el.value}).eq('id', +el.dataset.id)); toast('Stato aggiornato'); await refresh(); } catch (err){ toast(errIt(err)); }
 });
