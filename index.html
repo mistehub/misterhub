@@ -132,9 +132,9 @@ function errIt(e){
   return m;
 }
 const PLANS = {
-  starter: {n: 'Starter', p: '€ 49', items: ['1 competizione attiva', 'Fino a 16 squadre', 'Modello League Manager pronto', 'Assistenza via WhatsApp ed email, risposta entro 48 ore']},
-  pro: {n: 'Pro', p: '€ 99', hi: true, items: ['Fino a 3 competizioni attive', 'Fino a 24 squadre, più divisioni', 'Moduli e regole personalizzabili', 'Attivazione guidata della lega', 'Assistenza prioritaria, risposta entro 24 ore']},
-  elite: {n: 'Élite', p: '€ 199', items: ['Competizioni illimitate', 'Dominio personalizzato incluso (es. latualega.it), registrato e gestito da MisterHub', 'Logo, colori e grafiche della tua lega', 'Una modifica su misura al mese', 'Assistenza dedicata, anche durante le serate di gioco']}
+  starter: {n: 'Starter', p: '€ 49', items: ['Il sito così com’è, pronto da usare', 'Modello League Manager senza modifiche', 'Assistenza ridotta: via email, risposta entro 72 ore']},
+  pro: {n: 'Pro', p: '€ 99', hi: true, items: ['Regolamento personalizzabile: budget, rose, mercato, cambi e regole della tua lega', 'La struttura del sito resta quella di base', 'Assistenza base: WhatsApp ed email, risposta entro 48 ore']},
+  elite: {n: 'Élite', p: '€ 199', items: ['Tutto personalizzabile: regole, funzioni e grafica del sito a tuo piacimento', 'Dominio personalizzato incluso (es. latualega.it), registrato e gestito da MisterHub', 'Logo, colori e grafiche della tua lega', 'Assistenza mirata ogni giorno, anche durante le serate di gioco']}
 };
 const MODULES = ['Sorteggio panchine', 'Mercato e aste', 'Distinte e tattiche', 'Precampionato', 'Sponsor, stadio, staff medico', 'Coppa', 'Cartellini e squalifiche'];
 const ST = {iscrizioni: ['ISCRIZIONI APERTE', 'p-open'], in_corso: ['IN CORSO', 'p-live'], conclusa: ['CONCLUSA', 'p-end']};
@@ -189,9 +189,9 @@ function headerHTML(route){
     <a class="chip" href="#profilo">${esc(S.me?.nickname || 'Profilo')}</a></div>
     <nav class="menu" aria-label="Menu principale">
       <a href="#home"${on('home')}>Home</a>
-      <details><summary>Tornei ▾</summary><div class="dd"><a href="#tornei/tutti">Tutti i tornei</a><a href="#tornei/iscrizioni">Iscrizioni aperte</a><a href="#tornei/in_corso">In corso (lista d'attesa)</a><a href="#tornei/conclusa">Conclusi</a></div></details>
+      <details><summary>Tornei ▾</summary><div class="dd"><a href="#tornei/tutti">Tutti i tornei</a><a href="#tornei/iscrizioni">Iscrizioni aperte</a><a href="#tornei/in_corso">In corso</a><a href="#tornei/conclusa">Conclusi</a></div></details>
       <details><summary>Organizza ▾</summary><div class="dd"><a href="#crea">Crea la tua competizione</a><a href="#abbonamenti">Abbonamenti annuali</a></div></details>
-      <details><summary>Assistenza ▾</summary><div class="dd"><a href="#assistenza">Contatta MisterHub</a><a href="#tornei/tutti">Regolamenti dei tornei</a><a href="#profilo">Il mio profilo</a></div></details>
+      <details><summary>Assistenza ▾</summary><div class="dd"><a href="#assistenza">Contatta MisterHub</a><a href="#profilo">Il mio profilo</a></div></details>
     </nav></header>`;
 }
 function sponsorsHTML(){
@@ -228,9 +228,8 @@ function viewHome(){
   return `<span class="mut" style="font-weight:800;letter-spacing:1px;color:var(--acc)">CIAO, ${esc((S.me?.nickname || '').toUpperCase())}</span>
   <h1 class="disp">Dove vuoi andare?</h1>
   <div class="stack">
-    ${card('#tornei/tutti', IC.trophy, 'Tornei e leghe', 'Iscriviti o mettiti in lista d’attesa per un torneo già iniziato')}
+    ${card('#tornei/tutti', IC.trophy, 'Tornei e leghe', 'Guarda tornei e iscritti e contatta il creatore per entrare')}
     ${card('#crea', IC.plus, 'Crea la tua competizione', 'Il tuo manageriale come League Manager, o con le tue regole', true)}
-    ${card('#tornei/tutti', IC.book, 'Regolamenti', 'Le regole di ogni torneo, sempre consultabili')}
     ${card('#abbonamenti', IC.star, 'Abbonamenti', 'Piani annuali per organizzatori, con assistenza tutto l’anno')}
     ${card('#assistenza', IC.chat, 'Assistenza e contatti', 'Scrivici su WhatsApp per qualsiasi informazione')}
     ${card('#profilo', IC.user, 'Il mio profilo', 'Iscrizioni, richieste e abbonamento')}
@@ -244,27 +243,25 @@ function viewTornei(f){
   return `<h1 class="disp">Tornei e leghe</h1>
   <div class="filters">${fb('tutti', 'Tutti')}${fb('iscrizioni', 'Iscrizioni aperte')}${fb('in_corso', 'In corso')}${fb('conclusa', 'Conclusi')}</div>
   <div class="stack">${list.map(tcard).join('') || '<div class="empty card">Nessun torneo in questa sezione.</div>'}
-  <div class="notice"><b>Lista d’attesa:</b> se un torneo è già iniziato o al completo, puoi metterti in lista. Quando si libera un posto, l’organizzatore chiama in ordine di iscrizione alla lista.</div></div>`;
+  <div class="notice"><b>Come si entra:</b> contatta il creatore del torneo su WhatsApp. Se il torneo è già iniziato o al completo, ti mette in lista d’attesa e ti chiama quando si libera un posto.</div></div>`;
 }
 function tcard(c){
-  const [stl, stc] = ST[c.status] || ST.iscrizioni, mr = myReg(c.id), n = inOf(c.id).length, w = waitOf(c.id).length;
-  const full = n >= c.max_teams;
-  let main;
-  if (c.status === 'conclusa') main = '<button class="btn main ghost" disabled>Competizione conclusa</button>';
-  else if (mr) main = `<button class="btn main bad" data-act="leave" data-id="${c.id}">${mr.status === 'attesa' ? `Esci dalla lista d’attesa (sei ${waitOf(c.id).findIndex(x => x.user_id === mr.user_id) + 1}°)` : 'Ritira iscrizione'}</button>`;
-  else if (c.status === 'iscrizioni' && !full) main = `<button class="btn main" data-act="join" data-id="${c.id}">Iscriviti</button>`;
-  else main = `<button class="btn main out" data-act="join" data-id="${c.id}">Mettiti in lista d’attesa</button>`;
+  const [stl, stc] = ST[c.status] || ST.iscrizioni, mr = myReg(c.id), ins = inOf(c.id), wl = waitOf(c.id);
   const wa = waLink(c.whatsapp), site = safeUrl(c.site_url);
+  const msg = encodeURIComponent(`Ciao${c.organizer ? ' ' + c.organizer : ''}, sono ${S.me?.nickname || ''} su MisterHub: vorrei entrare in "${c.name}".`);
+  const chips = list => list.map((r, i) => `<span class="tag" style="color:var(--txt)">${i + 1}. ${esc(nick(r.user_id))}</span>`).join('');
+  let main;
+  if (c.status === 'conclusa') main = '<button class="btn full ghost" disabled>Competizione conclusa</button>';
+  else if (mr) main = `<span class="pill ${mr.status === 'attesa' ? 'p-wait' : 'p-open'}" style="align-self:flex-start">${mr.status === 'attesa' ? `SEI IN LISTA D’ATTESA (${wl.findIndex(x => x.user_id === mr.user_id) + 1}°)` : 'SEI ISCRITTO'}</span>`;
+  else main = wa ? `<a class="btn full" href="${wa}?text=${msg}" target="_blank" rel="noopener">Vuoi entrare? Contatta ${c.organizer ? esc(c.organizer) : 'il creatore'}</a>` : '<button class="btn full ghost" disabled>Contatto del creatore non disponibile</button>';
   return `<article class="tcard"><div class="th"><b>${esc(c.name)}</b><span class="pill ${stc}">${stl}</span></div>
     <div class="tb"><div class="row"><span class="tag">${esc(c.game)}</span><span class="tag">${esc(c.mode)}</span><span class="tag">${esc(c.platforms)}</span></div>
-      <span class="sub">${n} su ${c.max_teams} iscritti${w ? ` · ${w} in lista d’attesa` : ''}${c.organizer ? ` · organizza ${esc(c.organizer)}` : ''}</span>
-      ${mr ? `<span class="pill ${mr.status === 'attesa' ? 'p-wait' : 'p-open'}" style="align-self:flex-start">${mr.status === 'attesa' ? 'SEI IN LISTA D’ATTESA' : 'SEI ISCRITTO'}</span>` : ''}
-      <div class="tbtns">${main}
-        <button class="btn ghost" data-act="rules" data-id="${c.id}">Regolamento</button>
-        <button class="btn ghost" data-act="people" data-id="${c.id}">Iscritti</button>
-        ${wa ? `<a class="btn ghost" href="${wa}" target="_blank" rel="noopener">WhatsApp</a>` : site ? `<a class="btn ghost" href="${esc(site)}" target="_blank" rel="noopener">Sito</a>` : '<button class="btn ghost" disabled>Contatti</button>'}
-      </div>
-      ${site && wa ? `<a class="btn ghost sm" href="${esc(site)}" target="_blank" rel="noopener">Apri il sito della lega</a>` : ''}
+      <span class="sub">${ins.length} su ${c.max_teams} iscritti${c.organizer ? ` · creato da <b>${esc(c.organizer)}</b>` : ''}</span>
+      <div><b style="font-size:13px">Iscritti</b><div class="row" style="margin-top:6px;gap:6px">${chips(ins) || '<span class="mut">Ancora nessuno.</span>'}</div></div>
+      ${wl.length ? `<div><b style="font-size:13px">Lista d’attesa</b><div class="row" style="margin-top:6px;gap:6px">${chips(wl)}</div></div>` : ''}
+      ${main}
+      ${site ? `<a class="btn ghost sm" href="${esc(site)}" target="_blank" rel="noopener">Apri il sito della lega</a>` : ''}
+      <span class="mut">Per entrare scrivi al creatore: è lui che ti aggiunge agli iscritti o alla lista d’attesa.</span>
     </div></article>`;
 }
 function viewCrea(plan){
@@ -274,8 +271,8 @@ function viewCrea(plan){
   <p class="sub">Parti da un modello pronto o costruisci il tuo manageriale. Invia la richiesta: ti contattiamo su WhatsApp per i dettagli, il pagamento e l’attivazione.</p>
   ${mine.length ? `<div class="notice" style="margin-bottom:12px">Hai già ${mine.length === 1 ? 'una richiesta' : mine.length + ' richieste'}: stato <b>${esc(REQ_ST[mine[0].status])}</b>. Le trovi nel tuo <a href="#profilo">profilo</a>.</div>` : ''}
   <form id="creaform" class="stack">
-    <label class="choice"><input type="radio" name="base" value="modello" checked><span><b class="disp" style="font-size:22px">Modello League Manager</b><br><span class="sub">Serie A + B, sorteggio panchine, mercato con aste, precampionato, distinte FC 27. Pronto da usare.</span></span></label>
-    <label class="choice"><input type="radio" name="base" value="personalizzato"><span><b class="disp" style="font-size:22px">Personalizzato</b><br><span class="sub">Scegli tu moduli, struttura e regole.</span></span></label>
+    <label class="choice"><input type="radio" name="base" value="modello" checked><span><b class="disp" style="font-size:22px">Modello League Manager</b><br><span class="sub">Serie A + B, sorteggio panchine, mercato con aste, precampionato, distinte FC 27. Pronto da usare, va bene con tutti i piani.</span></span></label>
+    <label class="choice"><input type="radio" name="base" value="personalizzato"><span><b class="disp" style="font-size:22px">Personalizzato</b><br><span class="sub">Regole su misura con il piano Pro; anche funzioni e grafica su misura con il piano Élite.</span></span></label>
     <h2 class="disp">La competizione</h2>
     <label class="f">Nome della competizione<input name="name" required maxlength="60"></label>
     <div class="grid2"><label class="f">Gioco<select name="game"><option>FC 27</option><option>eFootball</option></select></label>
@@ -312,7 +309,7 @@ function viewAssistenza(){
       ${a ? `<a class="btn full" href="${waLink(a.whatsapp)}" target="_blank" rel="noopener">Scrivi su WhatsApp a ${esc(a.nickname)}</a>` : '<span class="mut">Il contatto WhatsApp dell’assistenza sarà disponibile a breve.</span>'}</div>
     <div class="card stack"><b class="disp" style="font-size:24px">Domande frequenti</b>
       <div><b>Quanto costa partecipare a un torneo?</b><div class="sub">Per i manager l’iscrizione su MisterHub è gratuita. Eventuali quote le decide l’organizzatore del torneo.</div></div>
-      <div><b>Come funziona la lista d’attesa?</b><div class="sub">Se un torneo è già iniziato o al completo ti metti in lista: quando si libera un posto l’organizzatore chiama in ordine di lista.</div></div>
+      <div><b>Come entro in un torneo?</b><div class="sub">Dalla sezione Tornei contatta il creatore su WhatsApp: è lui che ti iscrive o ti mette in lista d’attesa se il torneo è già iniziato o al completo.</div></div>
       <div><b>Come creo la mia lega?</b><div class="sub">Da “Crea la tua competizione” scegli il modello o le tue regole e l’abbonamento: ti ricontattiamo per l’attivazione.</div></div>
     </div></div>`;
 }
@@ -382,8 +379,16 @@ function rulesModal(c){
 function peopleModal(c, admin){
   const row = (r, i) => `<div class="li"><span class="n">${i + 1}. <b>${esc(nick(r.user_id))}</b>${r.team_wish ? `<br><span class="mut">${esc(r.team_wish)}</span>` : ''}</span>${admin ? `<span class="row">${r.status === 'attesa' ? `<button type="button" class="btn sm" data-reg="promote" data-u="${r.user_id}">Fai entrare</button>` : `<button type="button" class="btn sm ghost" data-reg="wait" data-u="${r.user_id}">In attesa</button>`}<button type="button" class="btn sm bad" data-reg="del" data-u="${r.user_id}" aria-label="Rimuovi">✕</button></span>` : ''}</div>`;
   const a = inOf(c.id), w = waitOf(c.id);
+  const free = S.profiles.filter(p => !regsOf(c.id).some(r => r.user_id === p.id));
   modal(`Iscritti · ${esc(c.name)}`, `<b>Iscritti (${a.length}/${c.max_teams})</b><div class="list">${a.map(row).join('') || '<span class="mut">Nessuno.</span>'}</div>
-    <b>Lista d’attesa (${w.length})</b><div class="list">${w.map(row).join('') || '<span class="mut">Nessuno.</span>'}</div>`, null);
+    <b>Lista d’attesa (${w.length})</b><div class="list">${w.map(row).join('') || '<span class="mut">Nessuno.</span>'}</div>
+    ${admin ? `<div class="card stack" style="background:var(--bg)"><b>Aggiungi un manager</b>
+      <label class="f">Utente registrato<select name="addu"><option value="">Scegli…</option>${free.map(p => `<option value="${p.id}">${esc(p.nickname)}</option>`).join('')}</select></label>
+      <div class="grid2"><label class="f">Dove<select name="adds"><option value="iscritto">Iscritti</option><option value="attesa">Lista d’attesa</option></select></label><label class="f">Squadra / nota<input name="addw" maxlength="80"></label></div>
+      <button type="button" class="btn" id="addreg">Aggiungi</button><span class="mut">Se non lo trovi, chiedigli di registrarsi prima su MisterHub.</span></div>` : ''}`, null);
+  const ab = $('#addreg'); if (ab) ab.onclick = async () => { const f = $('#mform'), u = f.elements.addu.value; if (!u) return toast('Scegli l’utente');
+    try { await q(sb.from('registrations').insert({competition_id: c.id, user_id: u, status: f.elements.adds.value, team_wish: f.elements.addw.value.trim() || null}));
+      $('#dlg').close(); await refresh(); peopleModal(comp(c.id), true); toast('Manager aggiunto'); } catch (e){ toast(errIt(e)); } };
   if (admin) $('#dlg').querySelectorAll('[data-reg]').forEach(b => b.onclick = async () => {
     try { const u = b.dataset.u, k = b.dataset.reg, base = sb.from('registrations');
       if (k === 'del'){ if (!confirm('Rimuovo questo manager dalla competizione?')) return; await q(base.delete().eq('competition_id', c.id).eq('user_id', u)); }
