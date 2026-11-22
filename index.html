@@ -113,7 +113,7 @@ dialog h3{margin:0;font-size:26px}
 const SB_URL = 'https://fgjekmjlmzwdcphqpeul.supabase.co';
 const SB_KEY = 'sb_publishable_U7-K-4NqzVgOEJyD4EsaRQ_FOGY8QI2';
 const sb = window.supabase.createClient(SB_URL, SB_KEY);
-const S = {user: null, me: null, comps: [], regs: [], names: {}, sponsors: [], reqs: [], subs: [], admins: [], profiles: [], leagues: [], myLeagues: [], pubLeagues: [], filter: 'tutti', atab: 'richieste', authMode: 'login', ready: false};
+const S = {user: null, me: null, comps: [], regs: [], names: {}, sponsors: [], reqs: [], subs: [], admins: [], profiles: [], pays: [], paying: false, leagues: [], myLeagues: [], pubLeagues: [], filter: 'tutti', atab: 'richieste', authMode: 'login', ready: false};
 const $ = s => document.querySelector(s);
 const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
 const fail = m => { throw new Error(m); };
@@ -138,6 +138,9 @@ const PLANS = {
 };
 const MODULES = ['Sorteggio panchine', 'Mercato e aste', 'Distinte e tattiche', 'Precampionato', 'Sponsor, stadio, staff medico', 'Coppa', 'Cartellini e squalifiche'];
 const ST = {iscrizioni: ['ISCRIZIONI APERTE', 'p-open'], in_corso: ['IN CORSO', 'p-live'], conclusa: ['CONCLUSA', 'p-end']};
+const PP_CLIENT = 'BAAvxqo8PnrWRt4puiPnxXaavylobtj9rb0nDM1geiTtLkJOrbi9BlxaRiciblGvpzuuHkXkhYD0gtGCXw';
+const PRICE = {starter: 49, pro: 99, elite: 199};
+const payOf = rid => S.pays.find(p => p.request_id === rid);
 const REQ_ST = {nuova: 'Nuova', in_contatto: 'In contatto', attiva: 'Attivata', rifiutata: 'Rifiutata'};
 const ICON = p => `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#9fd3b0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
 const IC = {
@@ -167,6 +170,7 @@ async function loadAll(){
     S.names = Object.fromEntries(profs.map(p => [p.id, p.nickname]));
     S.me = (await q(sb.from('profiles').select('*').eq('id', S.user.id))) [0] || null;
     S.reqs = await q(sb.from('requests').select('*').order('created_at', {ascending: false}));
+    try { S.pays = await q(sb.from('payments').select('*').order('created_at', {ascending: false})); } catch { S.pays = []; }
     S.subs = await q(sb.from('subscriptions').select('*').order('ends_on', {ascending: false}));
     S.profiles = S.me?.is_admin ? await q(sb.from('profiles').select('id,nickname,created_at').order('created_at')) : [];
     S.myLeagues = await q(sb.from('league_members').select('role,leagues(id,name,slug)').eq('user_id', S.user.id));
@@ -276,7 +280,7 @@ function viewCrea(plan){
   const p = PLANS[plan] ? plan : 'pro';
   const mine = S.reqs.filter(r => r.user_id === S.user.id);
   return `<h1 class="disp">Crea la tua competizione</h1>
-  <p class="sub">Parti da un modello pronto o costruisci il tuo manageriale. Invia la richiesta: ti contattiamo su WhatsApp per i dettagli, il pagamento e l’attivazione.</p>
+  <p class="sub">Parti da un modello pronto o costruisci il tuo manageriale. Invia la richiesta, poi paghi l’abbonamento dal tuo profilo con PayPal o carta: ti contattiamo su WhatsApp per i dettagli e l’attivazione.</p>
   ${mine.length ? `<div class="notice" style="margin-bottom:12px">Hai già ${mine.length === 1 ? 'una richiesta' : mine.length + ' richieste'}: stato <b>${esc(REQ_ST[mine[0].status])}</b>. Le trovi nel tuo <a href="#profilo">profilo</a>.</div>` : ''}
   <form id="creaform" class="stack">
     <label class="choice"><input type="radio" name="base" value="modello" checked><span><b class="disp" style="font-size:22px">Modello League Manager</b><br><span class="sub">Serie A + B, sorteggio panchine, mercato con aste, precampionato, distinte FC 27. Pronto da usare, va bene con tutti i piani.</span></span></label>
@@ -335,7 +339,8 @@ function viewProfilo(){
   <h2 class="disp">Iscrizioni</h2>
   <div class="list">${regs.map(r => { const c = comp(r.competition_id); return c ? `<div class="li"><span class="n"><b>${esc(c.name)}</b><br><span class="mut">${r.status === 'attesa' ? 'In lista d’attesa' : 'Iscritto'} dal ${day(r.created_at)}</span></span><button class="btn sm bad" data-act="leave" data-id="${c.id}">Esci</button></div>` : ''; }).join('') || '<div class="empty card">Nessuna iscrizione.</div>'}</div>
   <h2 class="disp">Richieste di competizione</h2>
-  <div class="list">${reqs.map(r => `<div class="li"><span class="n"><b>${esc(r.name)}</b><br><span class="mut">${esc(PLANS[r.plan]?.n)} · inviata il ${day(r.created_at)}</span></span><span class="pill ${r.status === 'attiva' ? 'p-open' : r.status === 'rifiutata' ? 'p-end' : 'p-wait'}">${esc(REQ_ST[r.status]).toUpperCase()}</span></div>`).join('') || '<div class="empty card">Nessuna richiesta. <a href="#crea">Crea la tua competizione</a></div>'}</div>
+  ${reqs.some(r => !payOf(r.id) && r.status !== 'rifiutata') ? `<div class="notice" style="margin-bottom:10px"><b>Paga l’abbonamento</b> per attivare la tua lega: con PayPal oppure con carta di credito o debito, anche senza account PayPal.</div>` : ''}
+  <div class="list">${reqs.map(r => `<div class="li" style="flex-wrap:wrap"><span class="n"><b>${esc(r.name)}</b><br><span class="mut">${esc(PLANS[r.plan]?.n)} · € ${PRICE[r.plan]} all’anno · inviata il ${day(r.created_at)}${payOf(r.id) ? ` · <b style="color:var(--ok,#2e9e5b)">pagata il ${day(payOf(r.id).created_at)}</b>` : ''}</span></span><span class="pill ${r.status === 'attiva' ? 'p-open' : r.status === 'rifiutata' ? 'p-end' : 'p-wait'}">${esc(REQ_ST[r.status]).toUpperCase()}</span>${!payOf(r.id) && r.status !== 'rifiutata' && PRICE[r.plan] ? `<div class="ppbox" data-rid="${r.id}" style="flex-basis:100%;margin-top:10px;min-height:48px"></div>` : ''}</div>`).join('') || '<div class="empty card">Nessuna richiesta. <a href="#crea">Crea la tua competizione</a></div>'}</div>
   <h2 class="disp">Abbonamento</h2>
   <div class="list">${subs.map(s => `<div class="li"><span class="n"><b>${esc(PLANS[s.plan]?.n)}</b><br><span class="mut">dal ${day(s.starts_on)} al ${day(s.ends_on)}</span></span>${new Date(s.ends_on) >= new Date(new Date().toDateString()) ? '<span class="pill p-open">ATTIVO</span>' : '<span class="pill p-end">SCADUTO</span>'}</div>`).join('') || '<div class="empty card">Nessun abbonamento. <a href="#abbonamenti">Vedi i piani</a></div>'}</div>
   <button class="btn ghost full" style="margin-top:20px" data-act="logout">Esci dall’account</button>`;
@@ -351,6 +356,7 @@ function viewAdmin(tab){
   if (S.atab === 'richieste') body = S.reqs.map(r => `<div class="card stack">
       <div class="row" style="justify-content:space-between"><b class="disp" style="font-size:24px">${esc(r.name)}</b><span class="pill ${r.status === 'nuova' ? 'p-live' : r.status === 'attiva' ? 'p-open' : 'p-wait'}">${esc(REQ_ST[r.status]).toUpperCase()}</span></div>
       <span class="sub">${esc(nick(r.user_id))} · ${day(r.created_at)} · ${r.base === 'modello' ? 'Modello League Manager' : 'Personalizzato'} · ${esc(r.game)} · ${r.teams} squadre · ${esc(r.mode)}</span>
+      <span class="sub">${(p => p ? `<b style="color:var(--ok,#2e9e5b)">PAGATA € ${Number(p.amount).toFixed(2)}</b> il ${day(p.created_at)} · PayPal ${esc(p.order_id)}${p.payer_email ? ' · ' + esc(p.payer_email) : ''}` : '<b>Non ancora pagata</b>')(payOf(r.id))}</span>
       <span class="sub">Abbonamento: <b>${esc(PLANS[r.plan]?.n)}</b>${r.modules?.length ? ` · Moduli: ${r.modules.map(esc).join(', ')}` : ''}</span>
       ${r.notes ? `<div class="notice">${esc(r.notes)}</div>` : ''}
       <div class="row">${waLink(r.whatsapp) ? `<a class="btn sm" href="${waLink(r.whatsapp)}" target="_blank" rel="noopener">WhatsApp ${esc(r.whatsapp)}</a>` : ''}
@@ -504,6 +510,41 @@ async function render(){
   const views = {home: viewHome, tornei: () => viewTornei(a), crea: () => viewCrea(a), abbonamenti: viewAbbonamenti, assistenza: viewAssistenza, profilo: viewProfilo, admin: () => viewAdmin(a)};
   app.innerHTML = headerHTML(r) + `<main class="wrap">${(views[r] || viewHome)()}</main>` + sponsorsHTML();
   bindPage(r);
+  if (r === 'profilo') mountPayPal();
+}
+let ppLoad = null;
+function loadPayPal(){
+  if (window.paypal) return Promise.resolve(window.paypal);
+  if (!ppLoad) ppLoad = new Promise((ok, ko) => { const sc = document.createElement('script');
+    sc.src = 'https://www.paypal.com/sdk/js?client-id=' + PP_CLIENT + '&currency=EUR&locale=it_IT&components=buttons&intent=capture';
+    sc.onload = () => ok(window.paypal); sc.onerror = () => { ppLoad = null; ko(new Error('PayPal non raggiungibile')); }; document.head.appendChild(sc); });
+  return ppLoad;
+}
+async function mountPayPal(){
+  const boxes = [...document.querySelectorAll('.ppbox[data-rid]')]; if (!boxes.length) return;
+  let pp; try { pp = await loadPayPal(); } catch { boxes.forEach(b => b.innerHTML = '<span class="mut">Il pagamento PayPal non si carica. Ricarica la pagina o scrivi all’assistenza.</span>'); return; }
+  boxes.forEach(box => { if (!box.isConnected || box.dataset.on) return; box.dataset.on = '1';
+    const r = S.reqs.find(x => x.id === +box.dataset.rid); if (!r) return; const price = PRICE[r.plan];
+    pp.Buttons({
+      style: {layout: 'vertical', color: 'gold', shape: 'rect', label: 'pay', height: 44},
+      onClick: () => { S.paying = true; },
+      onCancel: () => { S.paying = false; toast('Pagamento annullato'); },
+      createOrder: (d, a) => a.order.create({
+        purchase_units: [{description: `MisterHub · Piano ${PLANS[r.plan].n} · 1 anno · ${r.name}`.slice(0, 127), custom_id: String(r.id), amount: {currency_code: 'EUR', value: price.toFixed(2)}}],
+        application_context: {brand_name: 'MisterHub', shipping_preference: 'NO_SHIPPING', user_action: 'PAY_NOW'}}),
+      onApprove: async (d, a) => {
+        try {
+          const det = await a.order.capture();
+          const cap = det.purchase_units?.[0]?.payments?.captures?.[0];
+          await q(sb.from('payments').insert({request_id: r.id, plan: r.plan, amount: Number(cap?.amount?.value || price), currency: cap?.amount?.currency_code || 'EUR',
+            order_id: det.id, capture_id: cap?.id || null, payer_email: det.payer?.email_address || null, status: cap?.status || det.status}));
+          toast('Pagamento ricevuto, grazie! Ti contattiamo per attivare la lega.', 6000);
+        } catch (err){ toast('Pagamento fatto ma non registrato: scrivi all’assistenza con la ricevuta PayPal. (' + errIt(err) + ')', 9000); }
+        finally { S.paying = false; await refresh(); }
+      },
+      onError: err => { S.paying = false; toast('Pagamento non riuscito: riprova o usa un altro metodo.', 6000); console.error(err); }
+    }).render(box).catch(() => {});
+  });
 }
 function bindAuth(){
   const f = $('#authform'); if (!f) return;
@@ -519,7 +560,7 @@ function bindPage(r){
   const cf = $('#creaform'); if (cf) cf.onsubmit = async e => { e.preventDefault(); const fd = new FormData(cf), er = $('#creaerr'), b = cf.querySelector('[type=submit]'); er.hidden = true; b.disabled = true;
     try { const wa = String(fd.get('wa')).trim(); if (wa.replace(/\D/g, '').length < 8) fail('Scrivi un numero WhatsApp valido.');
       await q(sb.from('requests').insert({user_id: S.user.id, base: fd.get('base'), name: String(fd.get('name')).trim(), game: fd.get('game'), teams: +fd.get('teams'), mode: fd.get('mode'), modules: fd.getAll('mod'), plan: fd.get('plan'), notes: String(fd.get('notes') || ''), whatsapp: wa}));
-      toast('Richiesta inviata: ti contattiamo su WhatsApp'); location.hash = '#profilo'; await refresh();
+      toast('Richiesta inviata: ora puoi pagare l’abbonamento qui sotto', 5000); location.hash = '#profilo'; await refresh();
     } catch (err){ er.textContent = errIt(err); er.hidden = false; } finally { b.disabled = false; } };
   const mf = $('#mailform'); if (mf) mf.onsubmit = async e => { e.preventDefault(); const email = String(new FormData(mf).get('email')).trim();
     try { if (email.toLowerCase() === (S.user.email || '').toLowerCase()) fail('È già la tua email.');
@@ -569,7 +610,7 @@ document.addEventListener('change', async e => {
 document.addEventListener('toggle', e => { if (e.target.tagName === 'DETAILS' && e.target.open) document.querySelectorAll('nav.menu details[open]').forEach(d => { if (d !== e.target) d.open = false; }); }, true);
 document.addEventListener('click', e => { if (!e.target.closest('nav.menu')) document.querySelectorAll('nav.menu details[open]').forEach(d => d.open = false); });
 window.addEventListener('hashchange', () => { document.querySelectorAll('nav.menu details[open]').forEach(d => d.open = false); S.allSponsors = route().r === 'admin' ? S.allSponsors : null; render(); window.scrollTo(0, 0); });
-document.addEventListener('visibilitychange', () => { if (!document.hidden && S.user) refresh(); });
+document.addEventListener('visibilitychange', () => { if (!document.hidden && S.user && !S.paying) refresh(); });
 sb.auth.onAuthStateChange((ev, session) => {
   const u = session?.user || null, changed = (u?.id || null) !== (S.user?.id || null);
   S.user = u;
