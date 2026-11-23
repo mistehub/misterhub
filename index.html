@@ -46,6 +46,7 @@ h2{margin:22px 0 10px;font-size:28px}
 .hcard.hi span.d{color:#16301f}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:0;border-radius:12px;padding:13px 16px;font-weight:800;font-size:15px;cursor:pointer;text-decoration:none;background:var(--acc);color:var(--bg);min-height:44px}
 .btn.ghost{background:var(--bg);color:var(--txt);border:1px solid var(--line2)}
+.btn.danger{background:transparent;color:#e5484d;border:1px solid #e5484d66}
 .btn.out{background:transparent;color:var(--acc);border:1px solid var(--acc)}
 .btn.bad{background:#3a1416;color:#ffb3b5;border:1px solid #6b2427}
 .btn.sm{padding:9px 12px;font-size:13px;min-height:38px;border-radius:10px}
@@ -173,7 +174,7 @@ async function loadAll(){
     S.reqs = await q(sb.from('requests').select('*').order('created_at', {ascending: false}));
     try { S.pays = await q(sb.from('payments').select('*').order('created_at', {ascending: false})); } catch { S.pays = []; }
     S.subs = await q(sb.from('subscriptions').select('*').order('ends_on', {ascending: false}));
-    S.profiles = S.me?.is_admin ? await q(sb.from('profiles').select('id,nickname,created_at').order('created_at')) : [];
+    S.profiles = S.me?.is_admin ? await q(sb.from('profiles').select('id,nickname,is_admin,created_at').order('created_at')) : [];
     S.myLeagues = await q(sb.from('league_members').select('role,leagues(id,name,slug,trial,expires_at)').eq('user_id', S.user.id));
     try { S.trialUsed = (await q(sb.from('trial_log').select('user_id').eq('user_id', S.user.id))).length > 0; } catch { S.trialUsed = false; }
     S.leagues = S.me?.is_admin ? await q(sb.from('leagues').select('id,name,slug,settings,competition_id,trial,expires_at,created_at,league_members(user_id,role)').order('created_at', {ascending: false})) : [];
@@ -372,7 +373,7 @@ function viewProfilo(){
 /* ---------- admin ---------- */
 function viewAdmin(tab){
   if (!isAdmin()) return '<div class="empty card">Area riservata agli amministratori.</div>';
-  S.atab = ['richieste', 'leghe', 'competizioni', 'abbonamenti', 'sponsor'].includes(tab) ? tab : 'richieste';
+  S.atab = ['richieste', 'leghe', 'competizioni', 'abbonamenti', 'sponsor', 'utenti'].includes(tab) ? tab : 'richieste';
   const t = (k, l) => `<a href="#admin/${k}" class="${S.atab === k ? 'on' : ''}">${l}</a>`;
   const nNew = S.reqs.filter(r => r.status === 'nuova').length;
   let body = '';
@@ -384,22 +385,23 @@ function viewAdmin(tab){
       ${r.notes ? `<div class="notice">${esc(r.notes)}</div>` : ''}
       <div class="row">${waLink(r.whatsapp) ? `<a class="btn sm" href="${waLink(r.whatsapp)}" target="_blank" rel="noopener">WhatsApp ${esc(r.whatsapp)}</a>` : ''}
         ${(lg => lg ? `<a class="btn sm" href="lega.html?l=${esc(lg.slug)}">Apri la sua lega</a>` : `<button class="btn sm" data-act="lg-req" data-id="${r.id}">Crea la sua lega</button>`)(S.leagues.find(l => l.slug === slugify(r.name)))}
-        <select aria-label="Stato richiesta" data-act="req-status" data-id="${r.id}" style="width:auto;padding:9px">${Object.entries(REQ_ST).map(([k, v]) => `<option value="${k}"${k === r.status ? ' selected' : ''}>${v}</option>`).join('')}</select></div></div>`).join('') || '<div class="empty card">Nessuna richiesta per ora.</div>';
+        <select aria-label="Stato richiesta" data-act="req-status" data-id="${r.id}" style="width:auto;padding:9px">${Object.entries(REQ_ST).map(([k, v]) => `<option value="${k}"${k === r.status ? ' selected' : ''}>${v}</option>`).join('')}</select><button class="btn sm danger" data-act="del" data-t="requests" data-id="${r.id}" data-n="${esc(r.name)}">🗑 Elimina</button></div></div>`).join('') || '<div class="empty card">Nessuna richiesta per ora.</div>';
   if (S.atab === 'leghe') body = `<button class="btn full" data-act="lg-new">+ Crea una lega</button>` + S.leagues.map(l => { const cm = (l.league_members || []).filter(m => m.role === 'commissario');
       return `<div class="card stack"><b class="disp" style="font-size:24px">${esc(l.name)}${l.trial ? ' <span class="pill" style="font-size:14px">PROVA</span>' : ''}</b>
       ${l.trial ? `<span class="sub">Lega di prova · si cancella il <b>${dtime(l.expires_at)}</b></span><div class="row"><button class="btn sm" data-act="lg-keep" data-id="${l.id}">Rendi definitiva</button><button class="btn sm ghost" data-act="lg-more" data-id="${l.id}">+3 giorni</button></div>` : ''}
       <span class="sub">${location.origin}/lega.html?l=${esc(l.slug)} · ${(l.league_members || []).length} membri · commissario: ${cm.length ? cm.map(m => esc(nick(m.user_id))).join(', ') : '<b>nessuno</b>'}</span>
       <div class="row"><a class="btn sm" href="lega.html?l=${esc(l.slug)}">Apri la lega</a><button class="btn sm ghost" data-act="lg-comm" data-id="${l.id}">Nomina commissario</button>
         ${l.competition_id ? `<button class="btn sm ghost" data-act="comp-edit" data-id="${l.competition_id}">Contatto e scheda</button>` : `<button class="btn sm ghost" data-act="lg-pub" data-id="${l.id}">Mostra in Tornei</button>`}
-        <select aria-label="Piano della lega" data-act="lg-plan" data-id="${l.id}" style="width:auto;padding:9px">${Object.entries(PLANS).map(([k, v]) => `<option value="${k}"${(l.settings?.plan || 'starter') === k ? ' selected' : ''}>Piano ${v.n}</option>`).join('')}</select></div></div>`; }).join('') || '';
+        <select aria-label="Piano della lega" data-act="lg-plan" data-id="${l.id}" style="width:auto;padding:9px">${Object.entries(PLANS).map(([k, v]) => `<option value="${k}"${(l.settings?.plan || 'starter') === k ? ' selected' : ''}>Piano ${v.n}</option>`).join('')}</select><button class="btn sm danger" data-act="del" data-t="leagues" data-id="${l.id}" data-n="${esc(l.name)}">🗑 Elimina</button></div></div>`; }).join('') || '';
   if (S.atab === 'competizioni') body = `<button class="btn full" data-act="comp-edit" data-id="">+ Nuova competizione</button>` + S.comps.map(c => `<div class="card stack">
       <div class="row" style="justify-content:space-between"><b class="disp" style="font-size:24px">${esc(c.name)}</b><span class="pill ${ST[c.status][1]}">${ST[c.status][0]}</span></div>
       <span class="sub">${nIn(c.id)}/${c.max_teams} iscritti · ${waitOf(c.id).length} in attesa</span>
-      <div class="row"><button class="btn sm" data-act="comp-edit" data-id="${c.id}">Modifica</button><button class="btn sm ghost" data-act="comp-people" data-id="${c.id}">Iscritti e lista d’attesa</button></div></div>`).join('');
-  if (S.atab === 'abbonamenti') body = `<button class="btn full" data-act="sub-new">+ Attiva abbonamento</button>` + S.subs.map(s => `<div class="li"><span class="n"><b>${esc(nick(s.user_id))}</b> · ${esc(PLANS[s.plan]?.n)}<br><span class="mut">dal ${day(s.starts_on)} al ${day(s.ends_on)}${s.note ? ' · ' + esc(s.note) : ''}</span></span>${new Date(s.ends_on) >= new Date(new Date().toDateString()) ? '<span class="pill p-open">ATTIVO</span>' : '<span class="pill p-end">SCADUTO</span>'}</div>`).join('');
+      <div class="row"><button class="btn sm" data-act="comp-edit" data-id="${c.id}">Modifica</button><button class="btn sm ghost" data-act="comp-people" data-id="${c.id}">Iscritti e lista d’attesa</button><button class="btn sm danger" data-act="del" data-t="competitions" data-id="${c.id}" data-n="${esc(c.name)}">🗑 Elimina</button></div></div>`).join('');
+  if (S.atab === 'abbonamenti') body = `<button class="btn full" data-act="sub-new">+ Attiva abbonamento</button>` + S.subs.map(s => `<div class="li"><span class="n"><b>${esc(nick(s.user_id))}</b> · ${esc(PLANS[s.plan]?.n)}<br><span class="mut">dal ${day(s.starts_on)} al ${day(s.ends_on)}${s.note ? ' · ' + esc(s.note) : ''}</span></span>${new Date(s.ends_on) >= new Date(new Date().toDateString()) ? '<span class="pill p-open">ATTIVO</span>' : '<span class="pill p-end">SCADUTO</span>'}<button class="btn sm danger" data-act="del" data-t="subscriptions" data-id="${s.id}" data-n="${esc(nick(s.user_id))}">🗑</button></div>`).join('');
+  if (S.atab === 'utenti') body = `<p class="sub">${S.profiles.length} utenti registrati. Eliminando un utente si cancellano anche le sue richieste, iscrizioni e abbonamenti.</p>` + S.profiles.map(p => `<div class="li"><span class="n"><b>${esc(p.nickname)}</b>${p.is_admin ? ' · admin' : ''}<br><span class="mut">registrato il ${day(p.created_at)}</span></span>${p.id === S.user.id ? '<span class="mut">sei tu</span>' : `<button class="btn sm danger" data-act="del" data-t="users" data-id="${p.id}" data-n="${esc(p.nickname)}">🗑 Elimina</button>`}</div>`).join('');
   if (S.atab === 'sponsor') body = `<button class="btn full" data-act="sp-edit" data-id="">+ Nuovo sponsor</button>` + S.allSponsors.map(s => `<div class="li"><span class="n"><b>${esc(s.name)}</b><br><span class="mut">${esc(s.contact || '')}${s.active ? '' : ' · nascosto'}</span></span><button class="btn sm ghost" data-act="sp-edit" data-id="${s.id}">Modifica</button></div>`).join('');
   return `<h1 class="disp">Pannello admin</h1>
-  <div class="tabs">${t('richieste', 'Richieste' + (nNew ? ` (${nNew})` : ''))}${t('leghe', 'Leghe')}${t('competizioni', 'Competizioni')}${t('abbonamenti', 'Abbonamenti')}${t('sponsor', 'Sponsor')}</div>
+  <div class="tabs">${t('richieste', 'Richieste' + (nNew ? ` (${nNew})` : ''))}${t('leghe', 'Leghe')}${t('competizioni', 'Competizioni')}${t('abbonamenti', 'Abbonamenti')}${t('sponsor', 'Sponsor')}${t('utenti', 'Utenti')}</div>
   <div class="stack">${body}</div>`;
 }
 
@@ -618,6 +620,13 @@ document.addEventListener('click', async e => {
     if (act === 'rules') return rulesModal(comp(id));
     if (act === 'people') return peopleModal(comp(id), false);
     if (act === 'comp-people') return peopleModal(comp(id), true);
+    if (act === 'del'){ const t = el.dataset.t, n = el.dataset.n;
+      const msg = {requests: `Elimino la richiesta «${n}»?`, leagues: `Elimino la lega «${n}» con TUTTI i suoi dati (squadre, giocatori, partite, distinte)? Non si può annullare.`,
+        competitions: `Elimino la competizione «${n}» con iscritti e lista d’attesa?`, subscriptions: `Elimino l’abbonamento di ${n}?`, users: `Elimino l’utente «${n}»? Si cancellano anche le sue richieste, iscrizioni e abbonamenti. Non si può annullare.`}[t];
+      if (!confirm(msg)) return;
+      try { if (t === 'users'){ const {error} = await sb.rpc('admin_delete_user', {u: id}); if (error) throw error; }
+        else await q(sb.from(t).delete().eq('id', /^\d+$/.test(id) ? +id : id));
+        toast('Eliminato'); await refresh(); } catch (err){ toast(errIt(err)); } return; }
     if (act === 'lg-keep' || act === 'lg-more'){ const l = S.leagues.find(x => x.id === id);
       const patch = act === 'lg-keep' ? {trial: false, expires_at: null} : {expires_at: new Date(Math.max(Date.now(), new Date(l.expires_at).getTime()) + 3 * 864e5).toISOString()};
       try { await q(sb.from('leagues').update(patch).eq('id', id)); toast(act === 'lg-keep' ? 'La lega ora è definitiva' : 'Prova allungata di 3 giorni'); await refresh(); } catch (err){ toast(errIt(err)); } return; }
