@@ -6,20 +6,20 @@
 <meta name="theme-color" content="#12301f">
 <title>MisterHub · Leghe manageriali online</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800;900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800;900&family=Inter:wght@400;500;600;700;800&family=Archivo:wght@700;900&family=Oswald:wght@500;700&family=Caveat:wght@700&family=Russo+One&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-:root{--bg:#0b1712;--card:#12241a;--card2:#16301f;--line:#1f3a2c;--line2:#2f5a43;--acc:#9fd3b0;--txt:#eaf4ee;--sub:#b9d3c4;--mut:#8fb3a0;--red:#e5383b;--head:#12301f}
+:root{--fd:'Barlow Condensed',sans-serif;--fb:Inter,system-ui,sans-serif;--tt:uppercase;--rad:18px;--htxt:var(--txt);--headbg:var(--head);--bg:#0b1712;--card:#12241a;--card2:#16301f;--line:#1f3a2c;--line2:#2f5a43;--acc:#9fd3b0;--txt:#eaf4ee;--sub:#b9d3c4;--mut:#8fb3a0;--red:#e5383b;--head:#12301f}
 *{box-sizing:border-box}
-html,body{margin:0;background:var(--bg);color:var(--txt);font-family:Inter,system-ui,sans-serif;-webkit-text-size-adjust:100%}
+html,body{margin:0;background:var(--bg);color:var(--txt);font-family:var(--fb);-webkit-text-size-adjust:100%}
 a{color:var(--acc)}
 button,input,select,textarea{font:inherit}
-.disp{font-family:'Barlow Condensed',sans-serif;font-weight:900;letter-spacing:.5px;text-transform:uppercase}
+.disp{font-family:var(--fd);font-weight:900;letter-spacing:.5px;text-transform:var(--tt)}
 .wrap{max-width:760px;margin:0 auto;padding:16px 16px 120px}
-header{background:var(--head);border-bottom:3px solid var(--acc);position:sticky;top:0;z-index:20}
+header{background:var(--headbg);color:var(--htxt);border-bottom:3px solid var(--acc);position:sticky;top:0;z-index:20}
 .hrow{max-width:760px;margin:0 auto;padding:12px 16px 8px;display:flex;align-items:center;justify-content:space-between;gap:10px}
-.logo{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--txt)}
-.logo b{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:26px;letter-spacing:1px;line-height:1}
+.logo{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--htxt)}
+.logo b{font-family:var(--fd);font-weight:900;font-size:26px;letter-spacing:1px;line-height:1}
 .logo small{display:block;font-size:10px;letter-spacing:2px;color:var(--acc);font-weight:700}
 .chip{font-size:12px;font-weight:800;color:var(--bg);background:var(--acc);border-radius:999px;padding:8px 12px;text-decoration:none;white-space:nowrap;max-width:45vw;overflow:hidden;text-overflow:ellipsis}
 nav.menu{max-width:760px;margin:0 auto;padding:0 12px 12px;display:flex;gap:6px;flex-wrap:wrap}
@@ -34,14 +34,14 @@ h1{margin:6px 0 12px;font-size:40px;line-height:.95}
 h2{margin:22px 0 10px;font-size:28px}
 .sub{color:var(--sub);font-size:14px;line-height:1.5}
 .mut{color:var(--mut);font-size:13px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--rad);padding:16px}
 .stack{display:flex;flex-direction:column;gap:12px}
 .grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-.hcard{display:flex;align-items:center;gap:14px;text-decoration:none;color:var(--txt);background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px}
+.hcard{display:flex;align-items:center;gap:14px;text-decoration:none;color:var(--txt);background:var(--card);border:1px solid var(--line);border-radius:var(--rad);padding:16px}
 .hcard.hi{background:var(--acc);border-color:var(--acc);color:var(--bg)}
 .hcard .ic{flex:none;width:52px;height:52px;border-radius:14px;background:var(--card2);display:flex;align-items:center;justify-content:center}
 .hcard.hi .ic{background:var(--bg)}
-.hcard b{display:block;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:24px;line-height:1;text-transform:uppercase}
+.hcard b{display:block;font-family:var(--fd);font-weight:800;font-size:24px;line-height:1;text-transform:uppercase}
 .hcard span.d{display:block;font-size:13px;line-height:1.4;color:var(--sub);margin-top:4px}
 .hcard.hi span.d{color:#16301f}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:0;border-radius:12px;padding:13px 16px;font-weight:800;font-size:15px;cursor:pointer;text-decoration:none;background:var(--acc);color:var(--bg);min-height:44px}
@@ -56,9 +56,9 @@ h2{margin:22px 0 10px;font-size:28px}
 .pill{display:inline-block;font-size:11px;font-weight:800;padding:5px 9px;border-radius:999px;letter-spacing:.3px}
 .p-open{background:var(--acc);color:var(--bg)}.p-live{background:var(--red);color:#fff}.p-end{background:#2a3a33;color:var(--sub)}.p-wait{background:#4a3a12;color:#ffd98a}
 .tag{font-size:12px;font-weight:600;padding:4px 9px;border-radius:999px;background:var(--bg);color:var(--acc)}
-.tcard{background:var(--card);border:1px solid var(--line);border-radius:18px;overflow:hidden}
+.tcard{background:var(--card);border:1px solid var(--line);border-radius:var(--rad);overflow:hidden}
 .tcard .th{background:var(--card2);padding:14px 16px;display:flex;justify-content:space-between;align-items:center;gap:8px}
-.tcard .th b{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:26px;line-height:1;text-transform:uppercase}
+.tcard .th b{font-family:var(--fd);font-weight:900;font-size:26px;line-height:1;text-transform:uppercase}
 .tcard .tb{padding:14px 16px;display:flex;flex-direction:column;gap:10px}
 .tbtns{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
 .tbtns .btn{font-size:13px;padding:10px 4px;min-height:40px}
@@ -74,7 +74,7 @@ textarea{min-height:90px;resize:vertical}
 .choice input{width:20px;height:20px;flex:none;margin-top:2px}
 .tog{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 14px;border-radius:12px;background:var(--card);cursor:pointer}
 .tog input{width:22px;height:22px;flex:none}
-.plan{border-radius:18px;padding:18px;display:flex;flex-direction:column;gap:10px;background:var(--card);border:1px solid var(--line)}
+.plan{border-radius:var(--rad);padding:18px;display:flex;flex-direction:column;gap:10px;background:var(--card);border:1px solid var(--line)}
 .plan.hi{background:var(--acc);color:var(--bg);border-color:var(--acc)}
 .plan ul{margin:0;padding-left:18px;font-size:14px;line-height:1.75}
 .plan .price{font-size:34px;font-weight:800}
@@ -105,6 +105,88 @@ dialog h3{margin:0;font-size:26px}
 .seg button{border:0;border-radius:9px;padding:10px;font-weight:800;background:transparent;color:var(--sub);cursor:pointer}
 .seg button.on{background:var(--acc);color:var(--bg)}
 .empty{text-align:center;color:var(--mut);padding:24px 12px}
+
+/* ---------- aspetto (scelto dall'admin) ---------- */
+[data-theme="notte"]{--bg:#0b1a14;--card:#10261c;--card2:#16301f;--line:#1f4434;--line2:#2c5c46;--acc:#c6f432;--txt:#ffffff;--sub:#cfe8d8;--mut:#9fd3b0;--head:#0b1a14;--headbg:#0b1a14}
+[data-theme="chiaro"]{--fd:Archivo,sans-serif;--tt:none;--bg:#f6f4ee;--card:#ffffff;--card2:#efeadc;--line:#e6e1d2;--line2:#d6cfbb;--acc:#0f3d2e;--txt:#16201b;--sub:#4a544d;--mut:#5c665f;--head:#0f3d2e;--headbg:#0f3d2e;--htxt:#ffffff;--red:#c8102e}
+[data-theme="match"]{--fd:Oswald,sans-serif;--bg:#0c0c0f;--card:#17171c;--card2:#202028;--line:#2a2a33;--line2:#3a3a46;--acc:#ff6a1a;--txt:#ffffff;--sub:#c9c9d3;--mut:#a0a0ad;--head:#1d4fe0;--headbg:repeating-linear-gradient(115deg,#2f6bff 0 26px,#1d4fe0 26px 52px)}
+[data-theme="gesso"]{--fd:Caveat,cursive;--tt:none;--bg:#1f2d27;--card:#263a32;--card2:#2e463c;--line:#f1f1ea33;--line2:#f1f1ea55;--acc:#f3e9a4;--txt:#f1f1ea;--sub:#d5dbd3;--mut:#b7c0b8;--head:#1f2d27;--headbg:#1f2d27}
+[data-theme="gesso"] header{border-bottom:6px solid #6b4a2b}
+[data-theme="album"]{--fd:'Russo One',sans-serif;--bg:#f4ead2;--card:#ffffff;--card2:#fff3c4;--line:#1d1b16;--line2:#1d1b16;--acc:#d7263d;--txt:#1d1b16;--sub:#4a443a;--mut:#5b554a;--head:#d7263d;--headbg:#d7263d;--htxt:#ffffff}
+[data-theme="album"] header{border-bottom:6px solid #1b3a8a}
+[data-theme="pro"]{--fd:'Space Grotesk',sans-serif;--tt:none;--bg:#f7f7f9;--card:#ffffff;--card2:#f0eefc;--line:#ececf2;--line2:#dcdce6;--acc:#5b3df5;--txt:#14141a;--sub:#4b4b57;--mut:#6b6b78;--head:#ffffff;--headbg:#ffffff;--htxt:#14141a}
+[data-theme="pro"] header{border-bottom:1px solid #ececf2}
+[data-theme="proposta"]{--bg:#0b1a14;--card:#10261c;--card2:#16301f;--line:#1f4434;--line2:#2c5c46;--acc:#c6f432;--txt:#ffffff;--sub:#cfe8d8;--mut:#9fd3b0;--head:#0b1a14;--headbg:#0b1a14;--rad:20px}
+[data-theme="chiaro"] .btn,[data-theme="pro"] .btn,[data-theme="album"] .btn{color:#ffffff}
+[data-theme="chiaro"] .hcard.hi span.d,[data-theme="pro"] .hcard.hi span.d,[data-theme="album"] .hcard.hi span.d{color:#ffffffcc}
+[data-theme="chiaro"] .chip,[data-theme="pro"] .chip,[data-theme="album"] .chip{color:#ffffff}
+[data-theme="album"] .chip{background:#1b3a8a}
+[data-theme="chiaro"] .li,[data-theme="pro"] .li,[data-theme="album"] .li{background:var(--card2)}
+/* forma dei riquadri */
+[data-cards="square"]{--rad:6px}
+[data-cards="round"]{--rad:28px}
+[data-cards="sticker"] .card,[data-cards="sticker"] .hcard,[data-cards="sticker"] .tcard,[data-cards="sticker"] .plan{border:3px solid var(--txt);box-shadow:5px 5px 0 var(--txt)}
+[data-cards="flat"] .card,[data-cards="flat"] .hcard,[data-cards="flat"] .tcard,[data-cards="flat"] .plan{border-color:transparent;box-shadow:none}
+[data-cards="shadow"] .card,[data-cards="shadow"] .hcard,[data-cards="shadow"] .tcard,[data-cards="shadow"] .plan{border-color:transparent;box-shadow:0 10px 30px rgba(0,0,0,.18)}
+/* densità */
+[data-dens="compact"] .wrap{padding-top:10px}
+[data-dens="compact"] .stack{gap:8px}
+[data-dens="compact"] .card,[data-dens="compact"] .hcard{padding:12px}
+[data-dens="compact"] h1{font-size:32px}
+[data-dens="large"] .stack{gap:16px}
+[data-dens="large"] .card,[data-dens="large"] .hcard{padding:20px}
+[data-dens="large"] h1{font-size:48px}
+/* intestazione */
+[data-head="compact"] .logo small{display:none}
+[data-head="compact"] .logo svg{width:28px;height:30px}
+[data-head="compact"] .logo b{font-size:22px}
+[data-head="compact"] .hrow{padding-top:8px;padding-bottom:6px}
+[data-head="center"] .hrow{flex-direction:column;gap:8px}
+[data-head="hidden-chip"] .chip{display:none}
+/* home */
+.dashblk{display:none}
+[data-home="dash"] .dashblk{display:flex}
+[data-home="grid"] .homecards,[data-home="dash"] .homecards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+[data-home="grid"] .homecards .hcard,[data-home="dash"] .homecards .hcard{flex-direction:column;align-items:flex-start;gap:10px}
+[data-home="grid"] .homecards .hcard b,[data-home="dash"] .homecards .hcard b{font-size:20px}
+[data-home="list"] .homecards{gap:6px}
+[data-home="list"] .homecards .hcard{padding:10px 12px;gap:10px}
+[data-home="list"] .homecards .ic{width:36px;height:36px;border-radius:10px}
+[data-home="list"] .homecards .d{display:none}
+[data-home="list"] .homecards .hcard b{font-size:19px}
+[data-home="big"] .homecards .hcard{padding:22px;min-height:110px}
+[data-home="big"] .homecards .hcard b{font-size:30px}
+.homev{display:flex;flex-direction:column}
+[data-home="dash"] .homev h1{display:none}
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.stats .card{padding:12px;text-align:center}
+.stats b{display:block;font-family:var(--fd);font-size:28px;color:var(--acc)}
+/* menu */
+nav.bnav,nav.drawer,.burger,.drawerbg{display:none}
+[data-menu="bottom"] nav.menu,[data-menu="drawer"] nav.menu,[data-menu="side"] nav.menu{display:none}
+[data-menu="bottom"] nav.bnav,[data-menu="side"] nav.bnav{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--headbg);border-top:1px solid var(--line);justify-content:space-around;padding:6px 4px calc(6px + env(safe-area-inset-bottom))}
+nav.bnav a{display:flex;flex-direction:column;align-items:center;gap:3px;min-width:64px;min-height:48px;justify-content:center;font-size:11px;font-weight:700;color:var(--htxt);opacity:.75;text-decoration:none}
+nav.bnav a.on{opacity:1;color:var(--acc)}
+nav.bnav svg{width:22px;height:22px}
+[data-menu="bottom"] footer.spons,[data-menu="side"] footer.spons{bottom:calc(62px + env(safe-area-inset-bottom))}
+[data-menu="bottom"] .wrap,[data-menu="side"] .wrap{padding-bottom:190px}
+[data-menu="bottom"] .toast,[data-menu="side"] .toast{bottom:150px}
+[data-menu="drawer"] .burger{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:12px;border:1px solid var(--line2);background:transparent;color:var(--htxt);cursor:pointer}
+[data-menu="drawer"].dopen nav.drawer{display:flex}
+[data-menu="drawer"].dopen .drawerbg{display:block;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:40}
+nav.drawer{position:fixed;top:0;left:0;bottom:0;width:min(300px,84vw);z-index:41;background:var(--card);border-right:1px solid var(--line2);flex-direction:column;gap:4px;padding:18px 12px;overflow:auto}
+nav.drawer a{padding:13px 12px;border-radius:10px;color:var(--txt);text-decoration:none;font-weight:700}
+nav.drawer a.on,nav.drawer a:hover{background:var(--card2)}
+nav.drawer .dh{font-family:var(--fd);font-size:26px;padding:4px 12px 12px;color:var(--acc)}
+@media (min-width:900px){
+ [data-menu="side"] nav.bnav{top:0;bottom:0;right:auto;width:220px;flex-direction:column;justify-content:flex-start;gap:4px;padding:90px 10px 20px;border-top:0;border-right:1px solid var(--line)}
+ [data-menu="side"] nav.bnav a{flex-direction:row;justify-content:flex-start;gap:12px;font-size:15px;padding:10px 12px;border-radius:10px}
+ [data-menu="side"] nav.bnav a.on{background:var(--card2)}
+ [data-menu="side"] body{padding-left:220px}
+ [data-menu="side"] header{z-index:31}
+ [data-menu="side"] footer.spons{bottom:0;left:220px}
+ [data-menu="side"] .wrap{padding-bottom:120px}
+}
 </style>
 </head>
 <body>
@@ -150,13 +232,38 @@ const IC = {
   book: ICON('<path d="M4 4h7a3 3 0 0 1 3 3v13a2 2 0 0 0-2-2H4z"/><path d="M20 4h-4a2 2 0 0 0-2 2v14a2 2 0 0 1 2-2h4z"/>'),
   chat: ICON('<path d="M21 12a8 8 0 0 1-12 7l-5 1 1-4a8 8 0 1 1 16-4z"/>'),
   star: ICON('<path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/>'),
+  home: ICON('<path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>'),
   user: ICON('<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>')
 };
-const LOGO = (s = 40) => `<svg width="${s}" height="${s * 1.1}" viewBox="0 0 40 44" role="img" aria-label="MisterHub"><path d="M20 1 L38 11 V33 L20 43 L2 33 V11 Z" fill="#0b1712" stroke="#9fd3b0" stroke-width="2.5"/><path d="M12 30 V15 L20 24 L28 15 V30" fill="none" stroke="#9fd3b0" stroke-width="3" stroke-linejoin="round"/></svg>`;
+const LOGOS = {
+  scudo: s => `<svg width="${s}" height="${s * 1.1}" viewBox="0 0 40 44" role="img" aria-label="MisterHub"><path d="M20 1 L38 11 V33 L20 43 L2 33 V11 Z" fill="#0b1712" stroke="#9fd3b0" stroke-width="2.5"/><path d="M12 30 V15 L20 24 L28 15 V30" fill="none" stroke="#9fd3b0" stroke-width="3" stroke-linejoin="round"/></svg>`,
+  lavagna: s => `<svg width="${s}" height="${s}" viewBox="0 0 150 150" role="img" aria-label="MisterHub"><rect x="6" y="6" width="138" height="138" rx="34" fill="#123a2a" stroke="#c6f432" stroke-width="6"/><polyline points="38,108 38,46 75,86 112,46 112,108" fill="none" stroke="#fff" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/><circle cx="38" cy="46" r="9" fill="#c6f432"/><circle cx="112" cy="46" r="9" fill="#c6f432"/><circle cx="75" cy="86" r="9" fill="#c6f432"/></svg>`,
+  nodi: s => `<svg width="${s}" height="${s}" viewBox="0 0 160 160" role="img" aria-label="MisterHub"><circle cx="80" cy="80" r="74" fill="#0d1530"/><g stroke="#3d4f8f" stroke-width="6"><line x1="80" y1="80" x2="80" y2="26"/><line x1="80" y1="80" x2="127" y2="53"/><line x1="80" y1="80" x2="127" y2="107"/><line x1="80" y1="80" x2="80" y2="134"/><line x1="80" y1="80" x2="33" y2="107"/><line x1="80" y1="80" x2="33" y2="53"/></g><g fill="#fff"><circle cx="80" cy="26" r="11"/><circle cx="127" cy="53" r="11"/><circle cx="127" cy="107" r="11"/><circle cx="80" cy="134" r="11"/><circle cx="33" cy="107" r="11"/><circle cx="33" cy="53" r="11"/></g><circle cx="80" cy="80" r="26" fill="#ff7a2f"/></svg>`,
+  stemma: s => `<svg width="${s}" height="${s * 1.17}" viewBox="0 0 140 164" role="img" aria-label="MisterHub"><path d="M70 6 L132 26 L132 84 C132 122 104 146 70 158 C36 146 8 122 8 84 L8 26 Z" fill="#111"/><rect x="8" y="70" width="124" height="22" fill="#f5c400"/><polygon points="70,30 76,46 93,46 79,56 84,72 70,62 56,72 61,56 47,46 64,46" fill="#fff"/></svg>`
+};
+const LOGO = (s = 40) => (LOGOS[S.site?.logo] || LOGOS.scudo)(s);
+/* ---------- aspetto del sito ---------- */
+const LOOK = {
+  theme: ['Colori e caratteri', {classico: 'Classico (attuale)', notte: '1 · Notte allo stadio', chiaro: '2 · Panchina chiara', match: '3 · Matchday', gesso: '4 · Lavagna e gesso', album: '5 · Album anni ’90', pro: '6 · App pro', proposta: '7 · La proposta di Claude'}],
+  menu: ['Menu', {top: 'In alto, a tendina (attuale)', bottom: 'Barra in basso con icone', drawer: 'Menu a scomparsa (☰)', side: 'Barra laterale (da computer) + in basso su telefono'}],
+  home: ['Home', {card: 'Riquadri grandi in colonna (attuale)', grid: 'Griglia a 2 colonne', list: 'Lista compatta', big: 'Riquadri giganti', dash: 'Dashboard con numeri e “Da fare”'}],
+  cards: ['Forma dei riquadri', {soft: 'Morbidi (attuale)', round: 'Molto arrotondati', square: 'Squadrati', sticker: 'Adesivo (bordo spesso e ombra)', flat: 'Piatti senza bordo', shadow: 'Con ombra sfumata'}],
+  head: ['Intestazione', {full: 'Completa (attuale)', compact: 'Compatta', center: 'Logo al centro', 'hidden-chip': 'Senza nome utente'}],
+  dens: ['Spaziatura', {normal: 'Normale (attuale)', compact: 'Compatta', large: 'Ariosa'}],
+  logo: ['Logo', {scudo: 'Scudo esagonale (attuale)', lavagna: 'A · Lavagna tattica', nodi: 'B · Fischietto e nodi', stemma: 'C · Scudo del mister'}]
+};
+const PRESETS = {proposta: {theme: 'proposta', menu: 'bottom', home: 'dash', cards: 'soft', head: 'compact', dens: 'normal', logo: 'lavagna'}};
+function applySite(d){
+  S.site = d || {}; const el = document.documentElement;
+  Object.keys(LOOK).forEach(k => { const v = S.site[k]; if (v && LOOK[k][1][v]) el.dataset[k] = v; else delete el.dataset[k]; });
+  const m = document.querySelector('meta[name=theme-color]'); if (m) m.content = getComputedStyle(el).getPropertyValue('--head').trim() || '#12301f';
+}
+try { applySite(JSON.parse(localStorage.getItem('mh_site') || '{}')); } catch { applySite({}); }
 
 /* ---------- dati ---------- */
 async function q(p){ const r = await p; if (r.error) throw r.error; return r.data; }
 async function loadAll(){
+  loadSite();
   try { await sb.rpc('purge_trials'); } catch {}
   const [comps, regs, sponsors, admins] = await Promise.all([
     q(sb.from('competitions').select('*').order('sort').order('created_at')),
@@ -199,7 +306,11 @@ const nick = id => S.names[id] || S.profiles.find(p => p.id === id)?.nickname ||
 /* ---------- layout ---------- */
 function headerHTML(route){
   const on = r => route === r ? ' class="on"' : '';
-  return `<header><div class="hrow"><a class="logo" href="#home">${LOGO(36)}<span><b>MISTERHUB</b><small>LEGHE MANAGERIALI</small></span></a>
+  const bn = (r, h, ic, t) => `<a href="${h}"${route === r ? ' class="on"' : ''}>${ic}<span>${t}</span></a>`;
+  const nav = `<nav class="bnav" aria-label="Menu">${bn('home', '#home', IC.home, 'Home')}${bn('tornei', '#tornei/tutti', IC.trophy, 'Tornei')}${bn('crea', '#crea', IC.plus, 'Crea')}${bn('abbonamenti', '#abbonamenti', IC.star, 'Piani')}${bn('profilo', '#profilo', IC.user, 'Profilo')}${isAdmin() ? bn('admin', '#admin', IC.star, 'Admin') : ''}</nav>
+    <div class="drawerbg" data-act="drawer"></div><nav class="drawer" aria-label="Menu"><div class="dh">Menu</div>
+      <a href="#home"${on('home')}>Home</a><a href="#tornei/tutti"${on('tornei')}>Tornei e leghe</a><a href="#crea"${on('crea')}>Crea la tua competizione</a>${S.trialUsed ? '' : `<a href="#prova"${on('prova')}>Prova gratis 7 giorni</a>`}<a href="#abbonamenti"${on('abbonamenti')}>Abbonamenti</a><a href="#assistenza"${on('assistenza')}>Assistenza</a><a href="#profilo"${on('profilo')}>Il mio profilo</a>${isAdmin() ? `<a href="#admin"${on('admin')}>Pannello admin</a>` : ''}</nav>`;
+  return nav + `<header><div class="hrow"><button type="button" class="burger" data-act="drawer" aria-label="Apri il menu"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="logo" href="#home">${LOGO(36)}<span><b>MISTERHUB</b><small>LEGHE MANAGERIALI</small></span></a>
     <a class="chip" href="#profilo">${esc(S.me?.nickname || 'Profilo')}</a></div>
     <nav class="menu" aria-label="Menu principale">
       <a href="#home"${on('home')}>Home</a>
@@ -239,9 +350,16 @@ function viewAuth(){
 function viewHome(){
   const card = (href, ic, t, d, hi) => `<a class="hcard${hi ? ' hi' : ''}" href="${href}"><span class="ic">${ic}</span><span><b>${t}</b><span class="d">${d}</span></span></a>`;
   const mine = S.regs.filter(r => r.user_id === S.user.id).map(r => ({r, c: comp(r.competition_id)})).filter(x => x.c);
-  return `<span class="mut" style="font-weight:800;letter-spacing:1px;color:var(--acc)">CIAO, ${esc((S.me?.nickname || '').toUpperCase())}</span>
+  const myL = S.myLeagues.filter(m => m.leagues), unpaid = S.reqs.filter(r => r.user_id === S.user.id && !payOf(r.id) && r.status !== 'rifiutata');
+  const todo = [...myL.filter(m => m.leagues.trial).map(m => `<a class="li" href="lega.html?l=${esc(m.leagues.slug)}"><span class="n"><b>Prova «${esc(m.leagues.name)}»</b><br><span class="mut">si cancella il ${dtime(m.leagues.expires_at)}</span></span><span class="pill p-wait">PROVA</span></a>`),
+    ...unpaid.map(r => `<a class="li" href="#profilo"><span class="n"><b>Paga «${esc(r.name)}»</b><br><span class="mut">Piano ${esc(PLANS[r.plan]?.n)} · € ${PRICE[r.plan]}</span></span><span class="pill p-live">DA PAGARE</span></a>`)];
+  const dash = `<div class="dashblk stack" style="margin-bottom:14px">
+    <div class="stats"><div class="card"><b>${myL.length}</b><span class="mut">Leghe</span></div><div class="card"><b>${mine.length}</b><span class="mut">Competizioni</span></div><div class="card"><b>${todo.length}</b><span class="mut">Da fare</span></div></div>
+    <h2 class="disp" style="margin:6px 0 0">Da fare</h2>${todo.length ? `<div class="list">${todo.join('')}</div>` : '<div class="empty card">Tutto a posto, niente da fare.</div>'}</div>`;
+  return `<div class="homev"><span class="mut" style="font-weight:800;letter-spacing:1px;color:var(--acc)">CIAO, ${esc((S.me?.nickname || '').toUpperCase())}</span>
+  ${dash}
   <h1 class="disp">Dove vuoi andare?</h1>
-  <div class="stack">
+  <div class="stack homecards">
     ${card('#tornei/tutti', IC.trophy, 'Tornei e leghe', 'Guarda tornei e iscritti e contatta il creatore per entrare')}
     ${card('#crea', IC.plus, 'Crea la tua competizione', 'Il tuo manageriale come League Manager, o con le tue regole', true)}
     ${S.trialUsed ? '' : card('#prova', IC.star, 'Prova gratis per 7 giorni', 'Crea subito una lega di prova e scopri come funziona, senza pagare', true)}
@@ -250,7 +368,7 @@ function viewHome(){
     ${card('#profilo', IC.user, 'Il mio profilo', 'Iscrizioni, richieste e abbonamento')}
   </div>
   ${S.myLeagues.filter(m => m.leagues).length ? `<h2 class="disp">Le tue leghe</h2><div class="list">${S.myLeagues.filter(m => m.leagues).map(m => `<a class="li" href="lega.html?l=${esc(m.leagues.slug)}"><span class="n"><b>${esc(m.leagues.name)}</b><br><span class="mut">${m.role === 'commissario' ? 'Sei il commissario' : 'Sei un manager'}${m.leagues.trial ? ` · <b style="color:var(--warn,#e0a100)">PROVA · si cancella il ${dtime(m.leagues.expires_at)}</b>` : ''}</span></span><span class="btn sm">Apri</span></a>`).join('')}</div>` : ''}
-  ${mine.length ? `<h2 class="disp">Le tue competizioni</h2><div class="list">${mine.map(({r, c}) => `<div class="li"><span class="n"><b>${esc(c.name)}</b><br><span class="mut">${r.status === 'attesa' ? `In lista d’attesa · posizione ${waitOf(c.id).findIndex(x => x.user_id === r.user_id) + 1}` : 'Iscritto'}</span></span>${safeUrl(c.site_url) ? `<a class="btn sm" href="${esc(c.site_url)}" target="_blank" rel="noopener">Apri</a>` : `<a class="btn sm ghost" href="#tornei/tutti">Dettagli</a>`}</div>`).join('')}</div>` : ''}`;
+  ${mine.length ? `<h2 class="disp">Le tue competizioni</h2><div class="list">${mine.map(({r, c}) => `<div class="li"><span class="n"><b>${esc(c.name)}</b><br><span class="mut">${r.status === 'attesa' ? `In lista d’attesa · posizione ${waitOf(c.id).findIndex(x => x.user_id === r.user_id) + 1}` : 'Iscritto'}</span></span>${safeUrl(c.site_url) ? `<a class="btn sm" href="${esc(c.site_url)}" target="_blank" rel="noopener">Apri</a>` : `<a class="btn sm ghost" href="#tornei/tutti">Dettagli</a>`}</div>`).join('')}</div>` : ''}</div>`;
 }
 function viewTornei(f){
   S.filter = ['tutti', 'iscrizioni', 'in_corso', 'conclusa'].includes(f) ? f : 'tutti';
@@ -373,7 +491,7 @@ function viewProfilo(){
 /* ---------- admin ---------- */
 function viewAdmin(tab){
   if (!isAdmin()) return '<div class="empty card">Area riservata agli amministratori.</div>';
-  S.atab = ['richieste', 'leghe', 'competizioni', 'abbonamenti', 'sponsor', 'utenti'].includes(tab) ? tab : 'richieste';
+  S.atab = ['richieste', 'leghe', 'competizioni', 'abbonamenti', 'sponsor', 'utenti', 'aspetto'].includes(tab) ? tab : 'richieste';
   const t = (k, l) => `<a href="#admin/${k}" class="${S.atab === k ? 'on' : ''}">${l}</a>`;
   const nNew = S.reqs.filter(r => r.status === 'nuova').length;
   let body = '';
@@ -398,10 +516,14 @@ function viewAdmin(tab){
       <span class="sub">${nIn(c.id)}/${c.max_teams} iscritti · ${waitOf(c.id).length} in attesa</span>
       <div class="row"><button class="btn sm" data-act="comp-edit" data-id="${c.id}">Modifica</button><button class="btn sm ghost" data-act="comp-people" data-id="${c.id}">Iscritti e lista d’attesa</button><button class="btn sm danger" data-act="del" data-t="competitions" data-id="${c.id}" data-n="${esc(c.name)}">🗑 Elimina</button></div></div>`).join('');
   if (S.atab === 'abbonamenti') body = `<button class="btn full" data-act="sub-new">+ Attiva abbonamento</button>` + S.subs.map(s => `<div class="li"><span class="n"><b>${esc(nick(s.user_id))}</b> · ${esc(PLANS[s.plan]?.n)}<br><span class="mut">dal ${day(s.starts_on)} al ${day(s.ends_on)}${s.note ? ' · ' + esc(s.note) : ''}</span></span>${new Date(s.ends_on) >= new Date(new Date().toDateString()) ? '<span class="pill p-open">ATTIVO</span>' : '<span class="pill p-end">SCADUTO</span>'}<button class="btn sm danger" data-act="del" data-t="subscriptions" data-id="${s.id}" data-n="${esc(nick(s.user_id))}">🗑</button></div>`).join('');
+  if (S.atab === 'aspetto') body = `<div class="notice">Scegli come appare MisterHub a <b>tutti</b> gli utenti. Mentre cambi le voci vedi subito l’anteprima solo tu: gli altri la vedono quando premi <b>Salva</b>.</div>
+    <button class="btn full out" data-act="look-preset" data-id="proposta" style="margin-top:12px">Usa la proposta di Claude (tutto in un tocco)</button>
+    <form id="lookform" class="card stack" style="margin-top:12px">${Object.entries(LOOK).map(([k, [lab, opts]]) => `<label class="f">${lab}<select name="${k}">${Object.entries(opts).map(([v, n], i) => `<option value="${i ? v : ''}"${(S.site[k] || '') === (i ? v : '') ? ' selected' : ''}>${n}</option>`).join('')}</select></label>`).join('')}
+    <div class="row"><button class="btn" type="submit">Salva per tutti</button><button class="btn ghost" type="button" data-act="look-undo">Annulla modifiche</button><button class="btn danger" type="button" data-act="look-reset">Ripristina originale</button></div></form>`;
   if (S.atab === 'utenti') body = `<p class="sub">${S.profiles.length} utenti registrati. Eliminando un utente si cancellano anche le sue richieste, iscrizioni e abbonamenti.</p>` + S.profiles.map(p => `<div class="li"><span class="n"><b>${esc(p.nickname)}</b>${p.is_admin ? ' · admin' : ''}<br><span class="mut">registrato il ${day(p.created_at)}</span></span>${p.id === S.user.id ? '<span class="mut">sei tu</span>' : `<button class="btn sm danger" data-act="del" data-t="users" data-id="${p.id}" data-n="${esc(p.nickname)}">🗑 Elimina</button>`}</div>`).join('');
   if (S.atab === 'sponsor') body = `<button class="btn full" data-act="sp-edit" data-id="">+ Nuovo sponsor</button>` + S.allSponsors.map(s => `<div class="li"><span class="n"><b>${esc(s.name)}</b><br><span class="mut">${esc(s.contact || '')}${s.active ? '' : ' · nascosto'}</span></span><button class="btn sm ghost" data-act="sp-edit" data-id="${s.id}">Modifica</button></div>`).join('');
   return `<h1 class="disp">Pannello admin</h1>
-  <div class="tabs">${t('richieste', 'Richieste' + (nNew ? ` (${nNew})` : ''))}${t('leghe', 'Leghe')}${t('competizioni', 'Competizioni')}${t('abbonamenti', 'Abbonamenti')}${t('sponsor', 'Sponsor')}${t('utenti', 'Utenti')}</div>
+  <div class="tabs">${t('richieste', 'Richieste' + (nNew ? ` (${nNew})` : ''))}${t('leghe', 'Leghe')}${t('competizioni', 'Competizioni')}${t('abbonamenti', 'Abbonamenti')}${t('sponsor', 'Sponsor')}${t('utenti', 'Utenti')}${t('aspetto', 'Aspetto')}</div>
   <div class="stack">${body}</div>`;
 }
 
@@ -582,7 +704,20 @@ function bindAuth(){
       else { const r = await sb.auth.signInWithPassword({email, password}); if (r.error) throw r.error; }
     } catch (err){ er.textContent = errIt(err); er.hidden = false; } finally { b.disabled = false; } };
 }
+async function saveSite(d){
+  const {error} = await sb.from('site_settings').upsert({id: 1, data: d, updated_at: new Date().toISOString()}); if (error) throw error;
+  S.siteSaved = d; applySite(d); try { localStorage.setItem('mh_site', JSON.stringify(d)); } catch {} toast('Aspetto salvato per tutti');
+}
+async function loadSite(){
+  try { const {data} = await sb.from('site_settings').select('data').eq('id', 1).maybeSingle(); const d = data?.data || {};
+    S.siteSaved = d; if (!S.lookPreview) applySite(d); try { localStorage.setItem('mh_site', JSON.stringify(d)); } catch {} } catch {}
+}
 function bindPage(r){
+  const lf = $('#lookform'); if (lf){
+    const cur = () => Object.fromEntries([...new FormData(lf)].filter(([, v]) => v));
+    lf.onchange = () => { S.lookPreview = true; applySite(cur()); render(); };
+    lf.onsubmit = async e => { e.preventDefault(); try { await saveSite(cur()); S.lookPreview = false; render(); } catch (err){ toast(errIt(err)); } };
+  }
   const tf = $('#trialform'); if (tf) tf.onsubmit = async e => { e.preventDefault(); const b = tf.querySelector('button'); b.disabled = true;
     try { const {data, error} = await sb.rpc('create_trial', {p_name: String(new FormData(tf).get('name')).trim()}); if (error) throw error;
       toast('Lega di prova creata! Hai 7 giorni per provarla.', 5000); location.href = 'lega.html?l=' + encodeURIComponent(data);
@@ -620,6 +755,10 @@ document.addEventListener('click', async e => {
     if (act === 'rules') return rulesModal(comp(id));
     if (act === 'people') return peopleModal(comp(id), false);
     if (act === 'comp-people') return peopleModal(comp(id), true);
+    if (act === 'look-preset'){ S.lookPreview = true; applySite({...PRESETS[id]}); return render(); }
+    if (act === 'look-undo'){ applySite(S.siteSaved || {}); toast('Modifiche annullate'); return render(); }
+    if (act === 'look-reset'){ if (!confirm('Torno all’aspetto originale per tutti?')) return; await saveSite({}); return render(); }
+    if (act === 'drawer'){ document.documentElement.classList.toggle('dopen'); return; }
     if (act === 'del'){ const t = el.dataset.t, n = el.dataset.n;
       const msg = {requests: `Elimino la richiesta «${n}»?`, leagues: `Elimino la lega «${n}» con TUTTI i suoi dati (squadre, giocatori, partite, distinte)? Non si può annullare.`,
         competitions: `Elimino la competizione «${n}» con iscritti e lista d’attesa?`, subscriptions: `Elimino l’abbonamento di ${n}?`, users: `Elimino l’utente «${n}»? Si cancellano anche le sue richieste, iscrizioni e abbonamenti. Non si può annullare.`}[t];
@@ -657,7 +796,8 @@ sb.auth.onAuthStateChange((ev, session) => {
   if (!u){ S.ready = false; S.me = null; render(); return; }
   if (changed){ S.ready = false; render(); setTimeout(refresh, 0); }
 });
-(async () => { const {data} = await sb.auth.getSession(); S.user = data.session?.user || null; if (S.user) await refresh(); else render(); })();
+window.addEventListener('hashchange', () => document.documentElement.classList.remove('dopen'));
+(async () => { loadSite(); const {data} = await sb.auth.getSession(); S.user = data.session?.user || null; if (S.user) await refresh(); else render(); })();
 </script>
 </body>
 </html>
