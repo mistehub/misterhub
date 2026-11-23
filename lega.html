@@ -1543,7 +1543,14 @@ function closeSeason(){
 /* ---------- Supabase ---------- */
 const SLUG = (new URLSearchParams(location.search).get('l') || '').toLowerCase().replace(/[^a-z0-9-]/g, '');
 const INVITO = new URLSearchParams(location.search).get('invito') || '';
-let LID = null, LNAME = 'Lega', LMEMBER = false;
+let LID = null, LNAME = 'Lega', LMEMBER = false, LTRIAL = null;
+function trialBanner(){
+  if (!LTRIAL) return; const end = new Date(LTRIAL), left = end - Date.now(), days = Math.ceil(left / 864e5);
+  const when = end.toLocaleString('it-IT', {weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit'});
+  let b = document.querySelector('#trialbar'); if (!b){ b = document.createElement('div'); b.id = 'trialbar'; const h = document.querySelector('header.band'); (h ? h.parentNode : document.body).insertBefore(b, h ? h.nextSibling : document.body.firstChild); }
+  b.style.cssText = 'padding:10px 16px;text-align:center;font-weight:600;font-size:.95rem;' + (left > 0 ? 'background:#f5c400;color:#111' : 'background:#c8102e;color:#fff');
+  b.innerHTML = left > 0 ? `🧪 <b>Lega di prova</b> · massimo 6 manager · si cancella da sola <b>${when}</b> (${days <= 1 ? 'meno di un giorno' : 'tra ' + days + ' giorni'}). Per tenerla il commissario deve scegliere un piano su <a href="./#abbonamenti" style="color:inherit">MisterHub</a>.` : '⛔ <b>Prova scaduta</b>: la lega sta per essere cancellata e non si può più modificare.';
+}
 function LD(){
   const q = sb.from('league_docs'), add = r => Array.isArray(r) ? r.map(x => ({...x, league_id: LID})) : {...r, league_id: LID};
   return {
@@ -2246,10 +2253,10 @@ function invitePanel(){
   if (invCode === null){ setTimeout(() => loadInvite().catch(() => {}), 0); return ''; }
   if (!invCode) return '';
   return `<div class="panel"><div class="ph"><h3>Invita i manager</h3></div>
-    <p class="sub">Manda questo link ai tuoi manager: si registrano su MisterHub ed entrano direttamente nella lega.</p>
+    <p class="sub">Manda questo link ai tuoi manager: si registrano su MisterHub ed entrano direttamente nella lega.${LTRIAL ? ' <b>Lega di prova: massimo 6 manager, te compreso. Avvisali che alla scadenza la lega si cancella da sola.</b>' : ''}</p>
     <input readonly value="${esc(inviteLink())}" style="width:100%" onclick="this.select()">
     <div class="row" style="margin-top:10px"><button class="btn sm primary" data-act="inv-copy">Copia link</button>
-    <a class="btn sm" href="https://wa.me/?text=${encodeURIComponent('Entra nella lega ' + LNAME + ' su MisterHub: ' + inviteLink())}" target="_blank" rel="noopener">Invia su WhatsApp</a>
+    <a class="btn sm" href="https://wa.me/?text=${encodeURIComponent('Entra nella lega ' + LNAME + ' su MisterHub: ' + inviteLink() + (LTRIAL ? ' — ⚠️ È una lega di prova gratuita: dura 7 giorni e poi si cancella da sola con tutti i dati.' : ''))}" target="_blank" rel="noopener">Invia su WhatsApp</a>
     <button class="btn sm ghost" data-act="inv-new">Nuovo link</button></div>
     <p class="sub">«Nuovo link» disattiva quello vecchio.</p></div>`;
 }
@@ -2932,16 +2939,16 @@ async function boot(){
   const noLeague = msg => { S.gate = true; const nav = document.querySelector('#tabs'); if (nav) nav.hidden = true;
     $('#meta').innerHTML = '<a class="tag" href="./">MisterHub</a>'; $('#main').innerHTML = panelEmpty('Lega non trovata', msg); };
   if (!SLUG) return noLeague('Apri la lega dal link che ti ha dato il commissario, oppure da MisterHub.');
-  const {data: lg} = await sb.from('leagues').select('id,name,settings').eq('slug', SLUG).maybeSingle();
-  if (!lg) return noLeague('Questo indirizzo non corrisponde a nessuna lega. Controlla il link.');
-  LID = lg.id; LNAME = lg.name; LSET = lg.settings || {}; applyBrand(); document.title = LNAME + ' · MisterHub';
+  const {data: lg} = await sb.from('leagues').select('id,name,settings,trial,expires_at').eq('slug', SLUG).maybeSingle();
+  if (!lg) return noLeague('Questo indirizzo non corrisponde a nessuna lega. Controlla il link. Se era una lega di prova, è scaduta e si è cancellata.');
+  LID = lg.id; LNAME = lg.name; LSET = lg.settings || {}; LTRIAL = lg.trial ? lg.expires_at : null; applyBrand(); trialBanner(); document.title = LNAME + ' · MisterHub';
   const ln = document.querySelector('#lname'); if (ln) ln.textContent = LNAME;
   sb.auth.onAuthStateChange(ev => { if (ev === 'PASSWORD_RECOVERY') setTimeout(newPasswordModal, 300); });
   try { await loadSession(); } catch {}
   if (!S.me){ showGate(); return; }
   if (INVITO && !LMEMBER && !S.comm){
     const {error} = await sb.rpc('join_league', {l: LID, c: INVITO});
-    if (error) toast(error.message, 6000); else { await loadSession(); toast('Sei entrato in ' + LNAME + '!', 4000); }
+    if (error) toast(error.message, 6000); else { await loadSession(); toast('Sei entrato in ' + LNAME + '!' + (LTRIAL ? ' È una lega di prova: si cancella da sola alla scadenza.' : ''), 6000); }
     history.replaceState(null, '', location.pathname + '?l=' + SLUG + location.hash);
   }
   try { startPresence(); } catch {}

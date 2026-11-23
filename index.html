@@ -156,6 +156,7 @@ const LOGO = (s = 40) => `<svg width="${s}" height="${s * 1.1}" viewBox="0 0 40 
 /* ---------- dati ---------- */
 async function q(p){ const r = await p; if (r.error) throw r.error; return r.data; }
 async function loadAll(){
+  try { await sb.rpc('purge_trials'); } catch {}
   const [comps, regs, sponsors, admins] = await Promise.all([
     q(sb.from('competitions').select('*').order('sort').order('created_at')),
     q(sb.from('registrations').select('*').order('created_at')),
@@ -173,8 +174,9 @@ async function loadAll(){
     try { S.pays = await q(sb.from('payments').select('*').order('created_at', {ascending: false})); } catch { S.pays = []; }
     S.subs = await q(sb.from('subscriptions').select('*').order('ends_on', {ascending: false}));
     S.profiles = S.me?.is_admin ? await q(sb.from('profiles').select('id,nickname,created_at').order('created_at')) : [];
-    S.myLeagues = await q(sb.from('league_members').select('role,leagues(id,name,slug)').eq('user_id', S.user.id));
-    S.leagues = S.me?.is_admin ? await q(sb.from('leagues').select('id,name,slug,settings,competition_id,created_at,league_members(user_id,role)').order('created_at', {ascending: false})) : [];
+    S.myLeagues = await q(sb.from('league_members').select('role,leagues(id,name,slug,trial,expires_at)').eq('user_id', S.user.id));
+    try { S.trialUsed = (await q(sb.from('trial_log').select('user_id').eq('user_id', S.user.id))).length > 0; } catch { S.trialUsed = false; }
+    S.leagues = S.me?.is_admin ? await q(sb.from('leagues').select('id,name,slug,settings,competition_id,trial,expires_at,created_at,league_members(user_id,role)').order('created_at', {ascending: false})) : [];
   }
   S.ready = true;
 }
@@ -241,11 +243,12 @@ function viewHome(){
   <div class="stack">
     ${card('#tornei/tutti', IC.trophy, 'Tornei e leghe', 'Guarda tornei e iscritti e contatta il creatore per entrare')}
     ${card('#crea', IC.plus, 'Crea la tua competizione', 'Il tuo manageriale come League Manager, o con le tue regole', true)}
+    ${S.trialUsed ? '' : card('#prova', IC.star, 'Prova gratis per 7 giorni', 'Crea subito una lega di prova e scopri come funziona, senza pagare', true)}
     ${card('#abbonamenti', IC.star, 'Abbonamenti', 'Piani annuali per organizzatori, con assistenza tutto l’anno')}
     ${card('#assistenza', IC.chat, 'Assistenza e contatti', 'Scrivici su WhatsApp per qualsiasi informazione')}
     ${card('#profilo', IC.user, 'Il mio profilo', 'Iscrizioni, richieste e abbonamento')}
   </div>
-  ${S.myLeagues.filter(m => m.leagues).length ? `<h2 class="disp">Le tue leghe</h2><div class="list">${S.myLeagues.filter(m => m.leagues).map(m => `<a class="li" href="lega.html?l=${esc(m.leagues.slug)}"><span class="n"><b>${esc(m.leagues.name)}</b><br><span class="mut">${m.role === 'commissario' ? 'Sei il commissario' : 'Sei un manager'}</span></span><span class="btn sm">Apri</span></a>`).join('')}</div>` : ''}
+  ${S.myLeagues.filter(m => m.leagues).length ? `<h2 class="disp">Le tue leghe</h2><div class="list">${S.myLeagues.filter(m => m.leagues).map(m => `<a class="li" href="lega.html?l=${esc(m.leagues.slug)}"><span class="n"><b>${esc(m.leagues.name)}</b><br><span class="mut">${m.role === 'commissario' ? 'Sei il commissario' : 'Sei un manager'}${m.leagues.trial ? ` · <b style="color:var(--warn,#e0a100)">PROVA · si cancella il ${dtime(m.leagues.expires_at)}</b>` : ''}</span></span><span class="btn sm">Apri</span></a>`).join('')}</div>` : ''}
   ${mine.length ? `<h2 class="disp">Le tue competizioni</h2><div class="list">${mine.map(({r, c}) => `<div class="li"><span class="n"><b>${esc(c.name)}</b><br><span class="mut">${r.status === 'attesa' ? `In lista d’attesa · posizione ${waitOf(c.id).findIndex(x => x.user_id === r.user_id) + 1}` : 'Iscritto'}</span></span>${safeUrl(c.site_url) ? `<a class="btn sm" href="${esc(c.site_url)}" target="_blank" rel="noopener">Apri</a>` : `<a class="btn sm ghost" href="#tornei/tutti">Dettagli</a>`}</div>`).join('')}</div>` : ''}`;
 }
 function viewTornei(f){
@@ -300,11 +303,31 @@ function viewCrea(plan){
     <button class="btn full" type="submit">Invia la richiesta</button>
   </form>`;
 }
+const dtime = d => d ? new Date(d).toLocaleString('it-IT', {day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'}) : '';
+function viewProva(){
+  if (S.trialUsed) return `<h1 class="disp">Prova gratuita</h1><div class="empty card">Hai già usato la tua prova gratuita. Per creare una lega scegli un piano in <a href="#abbonamenti">Abbonamenti</a>.</div>`;
+  return `<h1 class="disp">Prova gratis per 7 giorni</h1>
+  <p class="sub">Crea subito la tua lega e scopri come funziona MisterHub: rose FC 27, mercato, aste, distinte, calendario e classifiche.</p>
+  <div class="card stack" style="margin:12px 0">
+    <b>Come funziona la prova</b>
+    <span class="sub">⏱️ Dura <b>7 giorni</b> da quando la crei.</span>
+    <span class="sub">👥 Massimo <b>6 manager</b>, tu compreso.</span>
+    <span class="sub">⭐ Tutte le funzioni del piano <b>Élite</b>.</span>
+    <span class="sub">🗑️ Alla scadenza <b>la lega e tutti i suoi dati si cancellano da soli</b>. Se vuoi tenerla, scegli un piano prima della scadenza e scrivici.</span>
+    <span class="sub">1️⃣ Una sola prova per account.</span>
+  </div>
+  <form id="trialform" class="card stack">
+    <label class="f">Nome della lega di prova<input name="name" required minlength="3" maxlength="60" placeholder="Es. Lega degli Amici"></label>
+    <label class="f" style="flex-direction:row;gap:8px;align-items:center"><input type="checkbox" name="ok" required style="width:auto"> Ho capito che dopo 7 giorni la lega si cancella da sola</label>
+    <button class="btn full">Crea la lega di prova</button>
+  </form>`;
+}
 function viewAbbonamenti(){
   const active = S.subs.find(s => s.user_id === S.user.id && new Date(s.ends_on) >= new Date(new Date().toDateString()));
   return `<h1 class="disp">Abbonamenti annuali</h1>
   <p class="sub">Per chi organizza. I manager che giocano entrano sempre gratis. Ogni piano dura 12 mesi e include l’assistenza per tutto l’anno.</p>
   ${active ? `<div class="notice" style="margin:12px 0">Il tuo abbonamento <b>${esc(PLANS[active.plan]?.n)}</b> è attivo fino al <b>${day(active.ends_on)}</b>.</div>` : ''}
+  ${S.trialUsed ? '' : `<div class="card stack" style="margin-top:12px"><b class="disp" style="font-size:26px">Prima vuoi provare?</b><span class="sub">Crea gratis una lega di prova per 7 giorni, con tutte le funzioni del piano Élite e fino a 6 manager.</span><a class="btn" href="#prova">Prova gratis 7 giorni</a></div>`}
   <div class="stack" style="margin-top:12px">${Object.entries(PLANS).map(([k, v]) => `<article class="plan${v.hi ? ' hi' : ''}">
     <div class="row" style="justify-content:space-between"><b class="disp" style="font-size:30px">${v.n}</b>${v.hi ? '<span class="pill" style="background:var(--bg);color:var(--acc)">CONSIGLIATO</span>' : ''}</div>
     <div><span class="price">${v.p}</span><span style="opacity:.8"> / anno</span></div>
@@ -363,7 +386,8 @@ function viewAdmin(tab){
         ${(lg => lg ? `<a class="btn sm" href="lega.html?l=${esc(lg.slug)}">Apri la sua lega</a>` : `<button class="btn sm" data-act="lg-req" data-id="${r.id}">Crea la sua lega</button>`)(S.leagues.find(l => l.slug === slugify(r.name)))}
         <select aria-label="Stato richiesta" data-act="req-status" data-id="${r.id}" style="width:auto;padding:9px">${Object.entries(REQ_ST).map(([k, v]) => `<option value="${k}"${k === r.status ? ' selected' : ''}>${v}</option>`).join('')}</select></div></div>`).join('') || '<div class="empty card">Nessuna richiesta per ora.</div>';
   if (S.atab === 'leghe') body = `<button class="btn full" data-act="lg-new">+ Crea una lega</button>` + S.leagues.map(l => { const cm = (l.league_members || []).filter(m => m.role === 'commissario');
-      return `<div class="card stack"><b class="disp" style="font-size:24px">${esc(l.name)}</b>
+      return `<div class="card stack"><b class="disp" style="font-size:24px">${esc(l.name)}${l.trial ? ' <span class="pill" style="font-size:14px">PROVA</span>' : ''}</b>
+      ${l.trial ? `<span class="sub">Lega di prova · si cancella il <b>${dtime(l.expires_at)}</b></span><div class="row"><button class="btn sm" data-act="lg-keep" data-id="${l.id}">Rendi definitiva</button><button class="btn sm ghost" data-act="lg-more" data-id="${l.id}">+3 giorni</button></div>` : ''}
       <span class="sub">${location.origin}/lega.html?l=${esc(l.slug)} · ${(l.league_members || []).length} membri · commissario: ${cm.length ? cm.map(m => esc(nick(m.user_id))).join(', ') : '<b>nessuno</b>'}</span>
       <div class="row"><a class="btn sm" href="lega.html?l=${esc(l.slug)}">Apri la lega</a><button class="btn sm ghost" data-act="lg-comm" data-id="${l.id}">Nomina commissario</button>
         ${l.competition_id ? `<button class="btn sm ghost" data-act="comp-edit" data-id="${l.competition_id}">Contatto e scheda</button>` : `<button class="btn sm ghost" data-act="lg-pub" data-id="${l.id}">Mostra in Tornei</button>`}
@@ -507,7 +531,7 @@ async function render(){
   if (!S.ready){ app.innerHTML = '<div class="empty" style="padding-top:40vh">Caricamento…</div>'; return; }
   const {r, a} = route();
   if (r === 'admin' && isAdmin() && !S.allSponsors){ try { S.allSponsors = await q(sb.from('sponsors').select('*').order('sort')); } catch (e){ S.allSponsors = []; } }
-  const views = {home: viewHome, tornei: () => viewTornei(a), crea: () => viewCrea(a), abbonamenti: viewAbbonamenti, assistenza: viewAssistenza, profilo: viewProfilo, admin: () => viewAdmin(a)};
+  const views = {home: viewHome, tornei: () => viewTornei(a), crea: () => viewCrea(a), abbonamenti: viewAbbonamenti, prova: viewProva, assistenza: viewAssistenza, profilo: viewProfilo, admin: () => viewAdmin(a)};
   app.innerHTML = headerHTML(r) + `<main class="wrap">${(views[r] || viewHome)()}</main>` + sponsorsHTML();
   bindPage(r);
   if (r === 'profilo') mountPayPal();
@@ -557,6 +581,10 @@ function bindAuth(){
     } catch (err){ er.textContent = errIt(err); er.hidden = false; } finally { b.disabled = false; } };
 }
 function bindPage(r){
+  const tf = $('#trialform'); if (tf) tf.onsubmit = async e => { e.preventDefault(); const b = tf.querySelector('button'); b.disabled = true;
+    try { const {data, error} = await sb.rpc('create_trial', {p_name: String(new FormData(tf).get('name')).trim()}); if (error) throw error;
+      toast('Lega di prova creata! Hai 7 giorni per provarla.', 5000); location.href = 'lega.html?l=' + encodeURIComponent(data);
+    } catch (err){ toast(errIt(err), 6000); b.disabled = false; } };
   const cf = $('#creaform'); if (cf) cf.onsubmit = async e => { e.preventDefault(); const fd = new FormData(cf), er = $('#creaerr'), b = cf.querySelector('[type=submit]'); er.hidden = true; b.disabled = true;
     try { const wa = String(fd.get('wa')).trim(); if (wa.replace(/\D/g, '').length < 8) fail('Scrivi un numero WhatsApp valido.');
       await q(sb.from('requests').insert({user_id: S.user.id, base: fd.get('base'), name: String(fd.get('name')).trim(), game: fd.get('game'), teams: +fd.get('teams'), mode: fd.get('mode'), modules: fd.getAll('mod'), plan: fd.get('plan'), notes: String(fd.get('notes') || ''), whatsapp: wa}));
@@ -590,6 +618,9 @@ document.addEventListener('click', async e => {
     if (act === 'rules') return rulesModal(comp(id));
     if (act === 'people') return peopleModal(comp(id), false);
     if (act === 'comp-people') return peopleModal(comp(id), true);
+    if (act === 'lg-keep' || act === 'lg-more'){ const l = S.leagues.find(x => x.id === id);
+      const patch = act === 'lg-keep' ? {trial: false, expires_at: null} : {expires_at: new Date(Math.max(Date.now(), new Date(l.expires_at).getTime()) + 3 * 864e5).toISOString()};
+      try { await q(sb.from('leagues').update(patch).eq('id', id)); toast(act === 'lg-keep' ? 'La lega ora è definitiva' : 'Prova allungata di 3 giorni'); await refresh(); } catch (err){ toast(errIt(err)); } return; }
     if (act === 'lg-new') return leagueModal();
     if (act === 'lg-pub'){ const l = S.leagues.find(x => x.id === id); const cm = (l?.league_members || []).find(m => m.role === 'commissario');
       try { await pubLeague(l, cm?.user_id); toast('La lega ora è in «Tornei e leghe». Puoi completare la scheda da Competizioni.'); await refresh(); } catch (err){ toast(errIt(err)); } return; }
